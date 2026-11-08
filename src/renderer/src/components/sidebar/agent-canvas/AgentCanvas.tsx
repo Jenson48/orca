@@ -24,6 +24,7 @@ import {
   type AgentCanvasTab
 } from '../../../../../shared/agent-canvas-layout'
 import { CanvasTabStrip } from './AgentCanvasTabStrip'
+import { CanvasProjectActions } from './CanvasProjectActions'
 import { CanvasSurface } from './AgentCanvasSurface'
 import { useIdleAgentCanvasThreads } from './use-idle-agent-canvas-threads'
 import { needsAgentCanvasAttention } from './agent-canvas-appearance'
@@ -214,6 +215,7 @@ export default function AgentCanvas(): React.JSX.Element {
             ))}
           </SelectContent>
         </Select>
+        {repo ? <CanvasProjectActions repo={repo} /> : null}
         <CanvasTabStrip
           project={project}
           onSelect={(id) => updateProject((p) => ({ ...p, activeTabId: id }))}
