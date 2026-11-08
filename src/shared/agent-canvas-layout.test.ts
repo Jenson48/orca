@@ -200,3 +200,36 @@ it('pane and terminal tab removal drop dangling edges and preserve unchanged ide
   expect(removed.projects.r.tabs[1].cards).toEqual({ 't:b': { x: 280, y: 0 } })
   expect(omitAgentCanvasTabPanes(layouts, new Set(['t'])).projects.r.tabs[1].edges).toEqual([])
 })
+
+describe('coordinator persistence', () => {
+  it('normalizes the coordinator and preserves it when a canvas tab closes', () => {
+    const layouts = normalizeAgentCanvasLayouts({
+      projects: {
+        r: {
+          coordinatorPaneKey: 'chat:root',
+          tabs: [{ id: 'extra', name: 'Extra', cards: {} }],
+          activeTabId: 'extra'
+        }
+      }
+    })
+    expect(layouts.projects.r.coordinatorPaneKey).toBe('chat:root')
+    expect(removeAgentCanvasTab(layouts.projects.r, 'extra').coordinatorPaneKey).toBe('chat:root')
+  })
+
+  it('unlinks removed coordinators even before their card is placed, preserving unrelated identity', () => {
+    const layouts = {
+      projects: {
+        r: { ...emptyAgentCanvasProject(), coordinatorPaneKey: 'chat:root' },
+        other: emptyAgentCanvasProject()
+      }
+    }
+    expect(omitAgentCanvasPaneKeys(layouts, new Set(['missing']))).toBe(layouts)
+    const next = omitAgentCanvasPaneKeys(layouts, new Set(['chat:root']))
+    expect(next.projects.r.coordinatorPaneKey).toBeUndefined()
+    expect(next.projects.other).toBe(layouts.projects.other)
+    expect(layouts.projects.r.coordinatorPaneKey).toBe('chat:root')
+    expect(
+      omitAgentCanvasTabPanes(layouts, new Set(['chat'])).projects.r.coordinatorPaneKey
+    ).toBeUndefined()
+  })
+})

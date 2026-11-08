@@ -26,6 +26,7 @@ export type AgentCanvasTab = {
 }
 
 export type AgentCanvasProjectLayout = {
+  coordinatorPaneKey?: string
   tabs: AgentCanvasTab[]
   activeTabId: string
 }
@@ -111,7 +112,13 @@ function normalizeProject(v: unknown): AgentCanvasProjectLayout {
     typeof raw.activeTabId === 'string' && tabs.some((t) => t.id === raw.activeTabId)
       ? raw.activeTabId
       : AGENT_CANVAS_MAIN_TAB_ID
-  return { tabs, activeTabId }
+  return {
+    tabs,
+    activeTabId,
+    ...(typeof raw.coordinatorPaneKey === 'string' && raw.coordinatorPaneKey
+      ? { coordinatorPaneKey: raw.coordinatorPaneKey }
+      : {})
+  }
 }
 
 export function normalizeAgentCanvasLayouts(v: unknown): AgentCanvasLayouts {
@@ -253,6 +260,7 @@ export function removeAgentCanvasTab(
         : t
     )
   return {
+    ...project,
     tabs,
     activeTabId: project.activeTabId === tabId ? AGENT_CANVAS_MAIN_TAB_ID : project.activeTabId
   }
@@ -302,7 +310,13 @@ function omitAgentCanvasCardsWhere<T extends AgentCanvasLayouts | undefined>(
         ...omitEdges(tab, doomed)
       }
     })
-    projects[repoId] = projectChanged ? { ...project, tabs } : project
+    const removeCoordinator = !!project.coordinatorPaneKey && doomed(project.coordinatorPaneKey)
+    projectChanged ||= removeCoordinator
+    const next = projectChanged ? { ...project, tabs } : project
+    if (removeCoordinator) {
+      delete next.coordinatorPaneKey
+    }
+    projects[repoId] = next
     changed ||= projectChanged
   }
   return changed ? ({ ...layouts, projects } as T) : layouts

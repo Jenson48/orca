@@ -24333,6 +24333,10 @@
     "failed": "Couldn’t stop {{host}}. Turn off its browser control in Settings > SSH."
   },
   "agentCanvas": {
+    "createCoordinator": "Create coordinator",
+    "removeCoordinator": "Remove coordinator",
+    "coordinator": "Coordinator",
+    "coordinatorLaunchFailed": "Could not link the coordinator. Check the launched agent.",
     "nextAttention": "Next agent needing me",
     "unread": "Unread",
     "cardActions": "Card actions",

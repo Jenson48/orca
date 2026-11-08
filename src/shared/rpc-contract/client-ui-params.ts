@@ -164,6 +164,7 @@ export const UiUpdateFields = z
           z.string(),
           z.object({
             activeTabId: z.string(),
+            coordinatorPaneKey: z.string().optional(),
             tabs: z.array(
               z.object({
                 id: z.string(),

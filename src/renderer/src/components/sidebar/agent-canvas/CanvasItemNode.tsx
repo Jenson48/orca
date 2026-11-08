@@ -87,12 +87,16 @@ export function CanvasItemNode({ data, selected }: NodeProps<CanvasItem>): React
           <Handle
             type="target"
             position={Position.Left}
-            className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+            className={
+              selected ? '!size-2.5 !opacity-100' : '!size-2.5 !opacity-40 group-hover:!opacity-100'
+            }
           />
           <Handle
             type="source"
             position={Position.Right}
-            className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+            className={
+              selected ? '!size-2.5 !opacity-100' : '!size-2.5 !opacity-40 group-hover:!opacity-100'
+            }
           />
         </>
       )}

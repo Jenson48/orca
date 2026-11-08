@@ -1,3 +1,4 @@
+import { useAppStore } from '@/store'
 import React from 'react'
 import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react'
 import { GitBranchPlus, MoreHorizontal, SquareArrowOutUpRight } from 'lucide-react'
@@ -50,6 +51,9 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
   const compact = useStore((s) => s.transform[2] < 0.6)
   const t = useTranslate()
   const { thread } = data
+  const coordinator = useAppStore(
+    (s) => s.agentCanvas.projects[thread.worktree.repoId]?.coordinatorPaneKey === thread.paneKey
+  )
   const { taskTitle, statusLine, workspaceLabel } = activityThreadRowCopy(thread, t)
   const idle = isIdleAgentCanvasThread(thread)
   const state = idle ? 'idle' : activityThreadStatusId(thread)
@@ -66,15 +70,23 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
         'group flex flex-col gap-1.5 rounded-lg border bg-card px-3 py-2.5 text-card-foreground shadow-xs transition-[border-color,box-shadow]',
         selected ? 'border-primary ring-1 ring-primary' : 'border-border',
         needsAgentCanvasAttention(thread) && 'border-status-warning ring-2 ring-status-warning',
-        !thread.currentAgentState && 'opacity-90'
+        !thread.currentAgentState && 'opacity-90',
+        coordinator && 'border-violet-500 ring-1 ring-violet-500'
       )}
       aria-label={taskTitle}
     >
+      {coordinator && (
+        <span className="text-xs text-violet-500">
+          {t('agentCanvas.coordinator', 'Coordinator')}
+        </span>
+      )}
       <Handle
         onClick={(event) => event.stopPropagation()}
         type="target"
         position={Position.Left}
-        className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+        className={
+          selected ? '!size-2.5 !opacity-100' : '!size-2.5 !opacity-40 group-hover:!opacity-100'
+        }
       />
       <div className="flex min-w-0 items-start gap-1.5">
         <span className="mt-0.5 inline-flex shrink-0">
@@ -171,7 +183,9 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
         type="source"
         position={Position.Right}
 
-        className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+        className={
+          selected ? '!size-2.5 !opacity-100' : '!size-2.5 !opacity-40 group-hover:!opacity-100'
+        }
       />
     </div>
   )

@@ -1,3 +1,4 @@
+import { CanvasCoordinator } from './CanvasCoordinator'
 import { useCanvasHistory } from './use-canvas-history'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
@@ -216,6 +217,7 @@ export default function AgentCanvas(): React.JSX.Element {
           </SelectContent>
         </Select>
         {repo ? <CanvasProjectActions repo={repo} /> : null}
+        {repoId ? <CanvasCoordinator repoId={repoId} /> : null}
         <CanvasTabStrip
           project={project}
           onSelect={(id) => updateProject((p) => ({ ...p, activeTabId: id }))}
@@ -225,6 +227,7 @@ export default function AgentCanvas(): React.JSX.Element {
             updateProject((p) => {
               const id = `tab-${Date.now().toString(36)}`
               return {
+                ...p,
                 tabs: [
                   ...p.tabs,
                   {

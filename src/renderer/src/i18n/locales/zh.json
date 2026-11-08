@@ -23232,6 +23232,10 @@
     "title": "Git 图"
   },
   "agentCanvas": {
+    "createCoordinator": "创建总控",
+    "removeCoordinator": "取消总控",
+    "coordinator": "总控",
+    "coordinatorLaunchFailed": "总控启动后没能关联上，请检查刚启动的 agent。",
     "nextAttention": "下一个需要我的智能体",
     "unread": "未读",
     "cardActions": "卡片操作",

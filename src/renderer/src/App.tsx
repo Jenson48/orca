@@ -1,3 +1,4 @@
+import { useCoordinatorEvents } from './components/sidebar/agent-canvas/use-coordinator-events'
 import { useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Toaster } from '@/components/ui/sonner'
@@ -51,6 +52,7 @@ function App(): React.JSX.Element {
   const clearUnreadDockBadge = useUnreadDockBadge(floatingWorkspace.open)
 
   useAppShellServices()
+  useCoordinatorEvents()
   // Load drafts before the startup chain so no failed step can skip them.
   useEffect(startNativeChatDraftLoad, [])
   // Committed WSL moves only: the list is empty otherwise, and always with the internal gate closed.
