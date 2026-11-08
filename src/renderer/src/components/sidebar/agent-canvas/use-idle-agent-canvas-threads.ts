@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getStructuredAgentSessionTabsByPaneKey } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import type { AgentPaneThread } from '@/components/activity/activity-thread-types'
+import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
 import type { TerminalTab } from '../../../../../shared/workspace-layout/terminal-tab-types'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
@@ -35,6 +36,7 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
   const getKnownWorktreeById = useAppStore((s) => s.getKnownWorktreeById)
   const statusByPane = useAppStore((s) => s.agentStatusByPaneKey)
   const terminalTabs = useAppStore((s) => s.tabsByWorktree)
+  const foreground = useAppStore((s) => s.paneForegroundAgentByPaneKey)
   return useMemo(() => {
     const known = new Set(threads.map((thread) => thread.paneKey))
     const idle: AgentPaneThread[] = []
@@ -78,8 +80,26 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
         idle.push(idleThread(entry.paneKey, worktree, tab, entry.agentType ?? 'unknown'))
       }
     }
+    // Terminal agents recognized from the pane's foreground process (no hook status yet, e.g. after a restart).
+    for (const [paneKey, entry] of Object.entries(foreground)) {
+      const tabId = parsePaneKey(paneKey)?.tabId
+      if (known.has(paneKey) || !entry.agent || entry.shellForeground || !tabId) {
+        continue
+      }
+      for (const [worktreeId, tabs] of Object.entries(terminalTabs)) {
+        const tab = tabs.find((t) => t.id === tabId)
+        const worktree = tab
+          ? (getKnownWorktreeById(worktreeId) as Worktree | undefined)
+          : undefined
+        if (tab && worktree) {
+          known.add(paneKey)
+          idle.push(idleThread(paneKey, worktree, tab, entry.agent as AgentPaneThread['agentType']))
+          break
+        }
+      }
+    }
     return idle
-  }, [threads, unifiedTabs, statusByPane, terminalTabs, getKnownWorktreeById])
+  }, [threads, unifiedTabs, statusByPane, terminalTabs, foreground, getKnownWorktreeById])
 }
 
 /** A card with no status history has not started yet. */

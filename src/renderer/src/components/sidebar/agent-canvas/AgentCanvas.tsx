@@ -41,9 +41,10 @@ export default function AgentCanvas(): React.JSX.Element {
     query: '',
     readFilter: 'all',
     groupBy: 'none',
-    selectedPaneKey: null
+    selectedPaneKey: null,
+    showChildAgents: true
   })
-  // Every agent except hidden child workers, regardless of the Activity view's scope filters, plus chats that have not started yet.
+  // Every agent including child workspaces' agents, regardless of the Activity view's scope filters, plus chats that have not started yet.
   const idleThreads = useIdleAgentCanvasThreads(markAllReadThreads)
   const threads = useMemo(
     () => (idleThreads.length > 0 ? [...markAllReadThreads, ...idleThreads] : markAllReadThreads),
