@@ -99,6 +99,16 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
         known.add(row.paneKey)
         idle.push(idleThread(row.paneKey, worktree, row.tab, row.agentType))
       }
+      // Agent tabs restored after a restart stay unspawned until opened; keep their card.
+      for (const tab of terminalTabs[worktreeId] ?? []) {
+        const leaf = tab.launchAgent ? state.terminalLayoutsByTabId[tab.id]?.activeLeafId : null
+        const paneKey = leaf ? `${tab.id}:${leaf}` : null
+        if (!paneKey || [...known].some((key) => key.startsWith(`${tab.id}:`))) {
+          continue
+        }
+        known.add(paneKey)
+        idle.push(idleThread(paneKey, worktree, tab, tab.launchAgent!))
+      }
     }
     return idle
   }, [
