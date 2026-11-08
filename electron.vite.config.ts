@@ -247,6 +247,8 @@ export const electronViteConfig: UserConfig = {
       ORCA_POSTHOG_WRITE_KEY: ORCA_POSTHOG_WRITE_KEY_LITERAL,
       ORCA_DIAGNOSTICS_TOKEN_URL: ORCA_DIAGNOSTICS_TOKEN_URL_LITERAL,
       ORCA_BUILD_COMMIT: ORCA_BUILD_COMMIT_LITERAL,
+      // Set only when packaging the standalone Agent Canvas app.
+      ORCA_CANVAS_STANDALONE: JSON.stringify(process.env.ORCA_CANVAS_STANDALONE === '1'),
       ...DARK_BUILD_DEFINES
     },
     // @xterm/headless declares exports:null; point Vite directly at its published CJS main to permit inlining.

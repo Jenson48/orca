@@ -17,6 +17,7 @@ import {
   readActiveProfileId,
   readPersistedHttp1CompatibilityMode
 } from './http1-compatibility-profile-state'
+import { CANVAS_STANDALONE_BUILD, CANVAS_STANDALONE_USER_DATA_DIR } from './canvas-standalone-build'
 
 const DEV_PARENT_SHUTDOWN_GRACE_MS = 3000
 const HTTP1_COMPATIBILITY_ENV_VAR = 'ORCA_DISABLE_HTTP2'
@@ -204,6 +205,9 @@ export function configureDevUserDataPath(isDev: boolean): void {
   }
 
   if (!isDev) {
+    if (CANVAS_STANDALONE_BUILD) {
+      app.setPath('userData', join(app.getPath('appData'), CANVAS_STANDALONE_USER_DATA_DIR))
+    }
     return
   }
   const overrideUserDataPath = process.env.ORCA_DEV_USER_DATA_PATH
