@@ -1,3 +1,4 @@
+import { agentCanvasItemFields } from './agent-canvas-item-schema'
 import { GitHistoryRefName } from './git-params'
 import { z } from 'zod'
 import { isFeatureTipSeenId } from '../feature-tips'
@@ -171,6 +172,7 @@ export const UiUpdateFields = z
                   z.string(),
                   z.object({ x: z.number().finite(), y: z.number().finite() })
                 ),
+                ...agentCanvasItemFields,
                 viewport: z
                   .object({
                     x: z.number().finite(),

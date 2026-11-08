@@ -236,6 +236,7 @@ export default function AgentCanvas(): React.JSX.Element {
       {repoId && tab ? (
         <ReactFlowProvider key={`${repoId}:${tab.id}`}>
           <CanvasSurface
+            onEditTab={(update) => updateTab(tab.id, update)}
             tab={tab}
             tabs={project.tabs}
             threads={projectThreads}

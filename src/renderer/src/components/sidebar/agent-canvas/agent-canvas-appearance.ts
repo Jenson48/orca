@@ -9,12 +9,14 @@ export function needsAgentCanvasAttention(thread: AgentPaneThread): boolean {
   )
 }
 
+export const agentCanvasHues = ['sky', 'emerald', 'violet', 'rose', 'fuchsia']
+
 export function agentCanvasWorkspaceColor(id: string): string {
   let hash = 0
   for (const char of id) {
     hash = (hash * 31 + char.charCodeAt(0)) >>> 0
   }
   // Only hues whose palette vars Orca's CSS already emits.
-  const hues = ['sky', 'emerald', 'violet', 'rose', 'fuchsia']
+  const hues = agentCanvasHues
   return `var(--color-${hues[hash % hues.length]}-500)`
 }

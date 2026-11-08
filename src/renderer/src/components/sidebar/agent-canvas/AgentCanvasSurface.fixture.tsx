@@ -98,7 +98,19 @@ const project: AgentCanvasProjectLayout = {
       id: 'main',
       name: 'Main',
       cards: { exp1: { x: 0, y: 0 }, exp2: { x: 280, y: 0 }, fork: { x: 560, y: 0 } },
-      viewport: { x: 16, y: 64, zoom: 0.85 }
+      items: {
+        team: {
+          type: 'frame',
+          x: -12,
+          y: -55,
+          text: 'Team',
+          width: 552,
+          height: 220,
+          color: 'sky'
+        },
+        heading: { type: 'text', x: 0, y: -100, text: 'Implementation', style: 'heading' }
+      },
+      viewport: { x: 16, y: 120, zoom: 0.85 }
     },
     { id: 'cfbfp', name: 'CFBFP', cards: {} }
   ],
@@ -120,7 +132,7 @@ function Canvas({ compact = false }: { compact?: boolean }): React.JSX.Element {
       </div>
       <ReactFlowProvider>
         <CanvasSurface
-          tab={{ ...project.tabs[0], viewport: { x: 16, y: 64, zoom: compact ? 0.5 : 0.85 } }}
+          tab={{ ...project.tabs[0], viewport: { x: 16, y: 120, zoom: compact ? 0.5 : 0.85 } }}
           tabs={project.tabs}
           threads={threads}
           lineage={lineage}

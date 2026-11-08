@@ -24352,6 +24352,16 @@
     "emptyTab": "This tab is empty. Move cards here from another tab.",
     "zoomOut": "Zoom out",
     "zoomIn": "Zoom in",
-    "fit": "Fit"
+    "fit": "Fit",
+    "text": "Text",
+    "area": "Area",
+    "heading": "Heading",
+    "body": "Body",
+    "deleteItem": "Delete item",
+    "sky": "Sky",
+    "emerald": "Emerald",
+    "violet": "Violet",
+    "rose": "Rose",
+    "fuchsia": "Fuchsia"
   }
 }

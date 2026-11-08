@@ -23251,6 +23251,16 @@
     "emptyTab": "这个标签页是空的，可以从其他标签页把卡片移过来。",
     "zoomOut": "缩小",
     "zoomIn": "放大",
-    "fit": "适应"
+    "fit": "适应",
+    "text": "文字",
+    "area": "区域",
+    "heading": "标题",
+    "body": "正文",
+    "deleteItem": "删除项目",
+    "sky": "天蓝",
+    "emerald": "翠绿",
+    "violet": "紫罗兰",
+    "rose": "玫瑰",
+    "fuchsia": "紫红"
   }
 }

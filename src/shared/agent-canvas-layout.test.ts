@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   type AgentCanvasProjectLayout,
   emptyAgentCanvasProject,
+  moveAgentCanvasCards,
+  omitAgentCanvasPaneKeys,
   normalizeAgentCanvasLayouts,
   omitAgentCanvasTabPanes,
   placeNewAgentCanvasCards,
@@ -108,4 +110,93 @@ it.each(['parent', 'sibling'])('places beside a %s on another tab', (relative) =
   expect(next?.tabs[1].cards.new).toEqual({ x: 320, y: 60 })
   expect(next?.tabs[0].cards).toEqual({ unrelated: { x: 0, y: 0 } })
   expect(project.tabs[1].cards.new).toBeUndefined()
+})
+
+const editableProject: AgentCanvasProjectLayout = {
+  activeTabId: 'exp',
+  tabs: [
+    { id: 'main', name: 'Main', cards: {} },
+    {
+      id: 'exp',
+      name: 'Exp',
+      cards: { 't:a': { x: 0, y: 0 }, 't:b': { x: 280, y: 0 } },
+      items: {
+        title: { type: 'text', x: 20, y: -40, text: 'Plan', style: 'heading' },
+        area: { type: 'frame', x: -20, y: -60, text: 'Team', width: 600, height: 240, color: 'sky' }
+      },
+      edges: [{ id: 'e', source: 'agent:t:a', target: 'item:title', label: 'Next' }]
+    }
+  ]
+}
+
+it('round trips editable items and edges while old fields remain optional', () => {
+  expect(normalizeAgentCanvasLayouts({ projects: { r: editableProject } }).projects.r).toEqual(
+    editableProject
+  )
+  expect(
+    normalizeAgentCanvasLayouts({ projects: { r: emptyAgentCanvasProject() } }).projects.r
+  ).toEqual({
+    activeTabId: 'main',
+    tabs: [{ id: 'main', name: 'Main', cards: {} }]
+  })
+})
+
+it('drops invalid items, dangling endpoints, duplicate edges and self loops', () => {
+  const tab = editableProject.tabs[1]
+  const project = {
+    ...editableProject,
+    tabs: [
+      editableProject.tabs[0],
+      {
+        ...tab,
+        items: {
+          ...tab.items,
+          bad: { type: 'text', x: Infinity, y: 0, text: '' },
+          style: { type: 'text', x: 0, y: 0, text: '', style: 'unknown' },
+          size: { type: 'frame', x: 0, y: 0, text: '', width: -1 }
+        },
+        edges: [
+          ...tab.edges!,
+          { id: 'dup', source: 'agent:t:a', target: 'item:title' },
+          { id: 'self', source: 'agent:t:a', target: 'agent:t:a' },
+          { id: 'missing', source: 'agent:missing', target: 'item:title' },
+          { id: 'frame', source: 'agent:t:a', target: 'item:area' }
+        ]
+      }
+    ]
+  }
+  expect(normalizeAgentCanvasLayouts({ projects: { r: project } }).projects.r).toEqual(
+    editableProject
+  )
+})
+
+it('moving a card drops its source user edges', () => {
+  const moved = moveAgentCanvasCards(editableProject, ['t:a'], 'main')
+  expect(moved.tabs[1].edges).toEqual([])
+  expect(moved.tabs[0].cards).toEqual({ 't:a': { x: 0, y: 0 } })
+  expect(moved.tabs[1].items).toBe(editableProject.tabs[1].items)
+})
+
+it('removing a canvas tab brings its items and edges to Main', () => {
+  const moved = removeAgentCanvasTab(editableProject, 'exp')
+  expect(moved.activeTabId).toBe('main')
+  expect(moved.tabs).toHaveLength(1)
+  expect(moved.tabs[0].items).toEqual({
+    title: { type: 'text', x: 20, y: -40, text: 'Plan', style: 'heading' },
+    area: { type: 'frame', x: -20, y: -60, text: 'Team', width: 600, height: 240, color: 'sky' }
+  })
+  expect(moved.tabs[0].edges).toEqual([
+    { id: 'e', source: 'agent:t:a', target: 'item:title', label: 'Next' }
+  ])
+})
+
+it('pane and terminal tab removal drop dangling edges and preserve unchanged identity', () => {
+  const layouts = { projects: { r: editableProject } }
+  expect(omitAgentCanvasPaneKeys(layouts, new Set(['missing']))).toBe(layouts)
+  expect(omitAgentCanvasTabPanes(layouts, new Set(['missing']))).toBe(layouts)
+  const removed = omitAgentCanvasPaneKeys(layouts, new Set(['t:a']))
+  expect(removed.projects.r.tabs[0]).toBe(editableProject.tabs[0])
+  expect(removed.projects.r.tabs[1].edges).toEqual([])
+  expect(removed.projects.r.tabs[1].cards).toEqual({ 't:b': { x: 280, y: 0 } })
+  expect(omitAgentCanvasTabPanes(layouts, new Set(['t'])).projects.r.tabs[1].edges).toEqual([])
 })

@@ -1,3 +1,5 @@
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
+import { ZoomControls } from './CanvasZoomControls'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Background,
@@ -9,31 +11,29 @@ import {
   ReactFlow,
   applyNodeChanges,
   useReactFlow,
-  useViewport,
   type Edge,
   type NodeChange
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Bell, Minus, Plus } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
-import { Button } from '@/components/ui/button'
 import type { AgentPaneThread } from '@/components/activity/activity-thread-types'
 import { resolveChildWorktreeRepository } from '@/lib/workspace/creation/child-worktree-composer'
 import { canCreateChildWorktree } from '@/components/sidebar/workspace-actions/context-menu/worktree-context-menu-policy'
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import type { AgentCanvasTab, AgentCanvasViewport } from '../../../../../shared/agent-canvas-layout'
 import { AgentCanvasCard, type AgentCanvasCardData, type AgentCanvasNode } from './AgentCanvasCard'
-import { getShortcutPlatform } from '@/hooks/useShortcutLabel'
-import { formatKeybinding } from '../../../../../shared/keybindings'
-import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { isEditableTarget } from '@/lib/editable-target'
-import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { needsAgentCanvasAttention, agentCanvasWorkspaceColor } from './agent-canvas-appearance'
 
-const nodeTypes = { agent: AgentCanvasCard }
+import { CanvasItemNode, type CanvasItem } from './CanvasItemNode'
+import { CanvasCreateToolbar } from './CanvasCreateToolbar'
+
+type CanvasNode = AgentCanvasNode | CanvasItem
+const nodeTypes = { agent: AgentCanvasCard, text: CanvasItemNode, frame: CanvasItemNode }
 
 export function CanvasSurface(props: {
+  onEditTab?: (update: (tab: AgentCanvasTab) => AgentCanvasTab) => void
   onAttentionHandled?: () => void
   attentionKey?: string | null
   onNextAttention?: () => void
@@ -51,6 +51,7 @@ export function CanvasSurface(props: {
 }): React.JSX.Element {
   const t = useTranslate()
   const { tab, threads, lineage } = props
+  const [editingId, setEditingId] = useState<string | null>(null)
   const threadByPane = useMemo(() => new Map(threads.map((x) => [x.paneKey, x])), [threads])
   const repos = useAppStore((s) => s.repos)
   const projectHostSetups = useAppStore((s) => s.projectHostSetups)
@@ -59,8 +60,8 @@ export function CanvasSurface(props: {
     [props.tabs, tab.id]
   )
 
-  const built = useMemo<AgentCanvasNode[]>(() => {
-    const nodes: AgentCanvasNode[] = []
+  const built = useMemo<CanvasNode[]>(() => {
+    const nodes: CanvasNode[] = []
     for (const [paneKey, position] of Object.entries(tab.cards)) {
       const thread = threadByPane.get(paneKey)
       if (!thread) {
@@ -83,12 +84,54 @@ export function CanvasSurface(props: {
       }
       nodes.push({ id: paneKey, type: 'agent', position, data })
     }
+    for (const [id, item] of Object.entries(tab.items ?? {})) {
+      nodes.push({
+        id: `item:${id}`,
+        type: item.type,
+        position: { x: item.x, y: item.y },
+        style: {
+          width: item.width ?? 248,
+          height: item.type === 'frame' ? (item.height ?? 200) : undefined
+        },
+        zIndex: item.type === 'frame' ? -1 : 0,
+        selected: editingId === id,
+        data: {
+          item,
+          editing: editingId === id && item.type === 'text',
+          finish: () => setEditingId(null),
+          update: (patch) =>
+            props.onEditTab?.((current) => ({
+              ...current,
+              items: { ...current.items, [id]: { ...current.items![id], ...patch } }
+            })),
+          remove: () =>
+            props.onEditTab?.((current) => ({
+              ...current,
+              items: Object.fromEntries(
+                Object.entries(current.items ?? {}).filter(([key]) => key !== id)
+              ),
+              edges: current.edges?.filter(
+                (edge) => edge.source !== `item:${id}` && edge.target !== `item:${id}`
+              )
+            }))
+        }
+      })
+    }
     return nodes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tab.cards, threadByPane, repos, projectHostSetups, otherTabs])
+  }, [
+    tab.cards,
+    tab.items,
+    editingId,
+    threadByPane,
+    repos,
+    projectHostSetups,
+    otherTabs,
+    props.onEditTab
+  ])
 
   // React Flow owns drag and selection state; the layout stays the source of positions.
-  const [nodes, setNodes] = useState<AgentCanvasNode[]>(built)
+  const [nodes, setNodes] = useState<CanvasNode[]>(built)
   useEffect(() => {
     setNodes((prev) => {
       const old = new Map(prev.map((n) => [n.id, n]))
@@ -97,15 +140,20 @@ export function CanvasSurface(props: {
         return o
           ? {
               ...n,
-              selected: o.selected,
+              selected: n.selected || o.selected,
               ...(o.dragging ? { position: o.position, dragging: true } : {})
             }
           : n
       })
     })
   }, [built])
+  useEffect(() => {
+    if (editingId && tab.items?.[editingId]?.type === 'frame') {
+      setEditingId(null)
+    }
+  }, [editingId, tab.items])
   const onNodesChange = useCallback(
-    (changes: NodeChange<AgentCanvasNode>[]) =>
+    (changes: NodeChange<CanvasNode>[]) =>
       setNodes((ns) =>
         applyNodeChanges(
           changes.filter((c) => c.type !== 'remove'),
@@ -144,7 +192,7 @@ export function CanvasSurface(props: {
     return result
   }, [tab.cards, threadByPane, lineage])
 
-  const flow = useReactFlow<AgentCanvasNode>()
+  const flow = useReactFlow<CanvasNode>()
   const initialized = useNodesInitialized()
   const { attentionKey, onAttentionHandled } = props
   useEffect(() => {
@@ -178,15 +226,38 @@ export function CanvasSurface(props: {
         }
       }}
     >
-      <ReactFlow<AgentCanvasNode>
+      <ReactFlow<CanvasNode>
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
-        onNodeClick={(_, node) => props.onSelect(node.data.thread)}
-        onNodeDragStop={(_, __, dragged) =>
-          props.onMoveCards(Object.fromEntries(dragged.map((n) => [n.id, n.position])))
-        }
+        onNodeClick={(_, node) => {
+          if (node.type === 'agent') {
+            props.onSelect(node.data.thread)
+          }
+        }}
+        onNodeDragStop={(_, __, dragged) => {
+          props.onMoveCards(
+            Object.fromEntries(
+              dragged.filter((n) => n.type === 'agent').map((n) => [n.id, n.position])
+            )
+          )
+          const items = dragged.filter((n) => n.type !== 'agent')
+          if (items.length) {
+            props.onEditTab?.((current) => ({
+              ...current,
+              items: {
+                ...current.items,
+                ...Object.fromEntries(
+                  items.map((n) => [
+                    n.id.slice(5),
+                    { ...current.items![n.id.slice(5)], ...n.position }
+                  ])
+                )
+              }
+            }))
+          }
+        }}
         defaultViewport={tab.viewport ?? { x: 24, y: 24, zoom: 0.9 }}
         fitView={!tab.viewport && placedCount > 0}
         fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
@@ -218,14 +289,46 @@ export function CanvasSurface(props: {
           }}
         />
         <Background variant={BackgroundVariant.Dots} gap={22} size={1.4} color="var(--border)" />
-        {props.onAddAgent ? (
-          <Panel position="top-left">
-            <Button size="sm" className="h-7 gap-1 text-xs" onClick={props.onAddAgent}>
-              <Plus className="size-3.5" />
-              {t('agentCanvas.addAgent', 'Agent')}
-            </Button>
-          </Panel>
-        ) : null}
+        <Panel position="top-left">
+          <CanvasCreateToolbar
+            onAgent={props.onAddAgent}
+            onCreate={(type) => {
+              const bounds = flow.getViewport()
+              const element = document.querySelector('.react-flow')?.getBoundingClientRect()
+              let x = ((element?.width ?? 640) / 2 - bounds.x) / bounds.zoom
+              let y = ((element?.height ?? 480) / 2 - bounds.y) / bounds.zoom
+              while (
+                nodes.some(
+                  (node) =>
+                    Math.abs(node.position.x - x) < 280 && Math.abs(node.position.y - y) < 160
+                )
+              ) {
+                x += 32
+                y += 40
+              }
+              const id = createBrowserUuid()
+              setEditingId(id)
+              props.onEditTab?.((current) => ({
+                ...current,
+                items: {
+                  ...current.items,
+                  [id]: {
+                    type,
+                    x,
+                    y,
+                    text: t(
+                      type === 'text' ? 'agentCanvas.text' : 'agentCanvas.area',
+                      type === 'text' ? 'Text' : 'Area'
+                    ),
+                    ...(type === 'text'
+                      ? { style: 'heading' }
+                      : { width: 560, height: 240, color: 'sky' })
+                  }
+                }
+              }))
+            }}
+          />
+        </Panel>
         <Panel position="top-right">
           <ZoomControls onNextAttention={props.onNextAttention} />
         </Panel>
@@ -243,64 +346,6 @@ export function CanvasSurface(props: {
           </Panel>
         ) : null}
       </ReactFlow>
-    </div>
-  )
-}
-
-function ZoomControls({ onNextAttention }: { onNextAttention?: () => void }): React.JSX.Element {
-  const t = useTranslate()
-  const flow = useReactFlow()
-  const { zoom } = useViewport()
-  return (
-    <div className="flex items-center rounded-md border border-border bg-card font-mono text-[11px] shadow-xs">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            disabled={!onNextAttention}
-            onClick={onNextAttention}
-            aria-label={t('agentCanvas.nextAttention', 'Next agent needing me')}
-          >
-            <Bell className="size-3" />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="top" sideOffset={4}>
-          {t('agentCanvas.nextAttention', 'Next agent needing me')}
-          <ShortcutKeyCombo
-            className="ml-2"
-            keys={formatKeybinding('Alt+N', getShortcutPlatform())}
-          />
-        </TooltipContent>
-      </Tooltip>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={t('agentCanvas.zoomOut', 'Zoom out')}
-        onClick={() => void flow.zoomOut({ duration: 150 })}
-      >
-        <Minus className="size-3" />
-      </Button>
-      <span className="w-10 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon-xs"
-        aria-label={t('agentCanvas.zoomIn', 'Zoom in')}
-        onClick={() => void flow.zoomIn({ duration: 150 })}
-      >
-        <Plus className="size-3" />
-      </Button>
-      <Button
-        type="button"
-        variant="ghost"
-        size="xs"
-        className="rounded-l-none border-l border-border px-2 font-mono text-[11px]"
-        onClick={() => void flow.fitView({ duration: 200, maxZoom: 1, padding: 0.2 })}
-      >
-        {t('agentCanvas.fit', 'Fit')}
-      </Button>
     </div>
   )
 }

@@ -1,13 +1,27 @@
+import { normalizeItems, normalizeEdges, omitEdges } from './agent-canvas-items'
+
 /** Agent canvas layout: per project, user-named tabs holding agent cards at canvas positions. */
 
 export type AgentCanvasPoint = { x: number; y: number }
 export type AgentCanvasViewport = { x: number; y: number; zoom: number }
+
+export type AgentCanvasItem = AgentCanvasPoint & {
+  type: 'text' | 'frame'
+  text: string
+  width?: number
+  height?: number
+  style?: 'heading' | 'body'
+  color?: string
+}
+export type AgentCanvasEdge = { id: string; source: string; target: string; label?: string }
 
 export type AgentCanvasTab = {
   id: string
   name: string
   /** Card positions keyed by agent pane key; a pane sits on at most one tab. */
   cards: Record<string, AgentCanvasPoint>
+  items?: Record<string, AgentCanvasItem>
+  edges?: AgentCanvasEdge[]
   viewport?: AgentCanvasViewport
 }
 
@@ -80,10 +94,13 @@ function normalizeProject(v: unknown): AgentCanvasProjectLayout {
       }
     }
     const viewport = normalizeViewport(tab.viewport)
+    const items = normalizeItems(tab.items)
     tabs.push({
       id: tab.id,
       name: typeof tab.name === 'string' && tab.name.trim() ? tab.name : 'Untitled',
       cards,
+      ...(tab.items !== undefined ? { items } : {}),
+      ...(tab.edges !== undefined ? { edges: normalizeEdges(tab.edges, cards, items) } : {}),
       ...(viewport ? { viewport } : {})
     })
   }
@@ -206,7 +223,7 @@ export function moveAgentCanvasCards(
         return { ...t, cards }
       }
       const rest = Object.fromEntries(Object.entries(t.cards).filter(([k]) => !moving.has(k)))
-      return { ...t, cards: rest }
+      return { ...t, cards: rest, ...omitEdges(t, (key) => moving.has(key)) }
     })
   }
 }
@@ -224,7 +241,17 @@ export function removeAgentCanvasTab(
     return project
   }
   const moved = moveAgentCanvasCards(project, Object.keys(tab.cards), AGENT_CANVAS_MAIN_TAB_ID)
-  const tabs = moved.tabs.filter((t) => t.id !== tabId)
+  const tabs = moved.tabs
+    .filter((t) => t.id !== tabId)
+    .map((t) =>
+      t.id === AGENT_CANVAS_MAIN_TAB_ID
+        ? {
+            ...t,
+            ...(tab.items ? { items: { ...t.items, ...tab.items } } : {}),
+            ...(tab.edges ? { edges: [...(t.edges ?? []), ...tab.edges] } : {})
+          }
+        : t
+    )
   return {
     tabs,
     activeTabId: project.activeTabId === tabId ? AGENT_CANVAS_MAIN_TAB_ID : project.activeTabId
@@ -271,7 +298,8 @@ function omitAgentCanvasCardsWhere<T extends AgentCanvasLayouts | undefined>(
       projectChanged = true
       return {
         ...tab,
-        cards: Object.fromEntries(Object.entries(tab.cards).filter(([k]) => !doomed(k)))
+        cards: Object.fromEntries(Object.entries(tab.cards).filter(([k]) => !doomed(k))),
+        ...omitEdges(tab, doomed)
       }
     })
     projects[repoId] = projectChanged ? { ...project, tabs } : project
