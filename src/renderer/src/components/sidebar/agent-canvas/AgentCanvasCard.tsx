@@ -1,7 +1,8 @@
 import { useAppStore } from '@/store'
+import { setAgentCanvasCoordinator } from './coordinator-prompt'
 import React from 'react'
 import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react'
-import { GitBranchPlus, MoreHorizontal, SquareArrowOutUpRight } from 'lucide-react'
+import { Crown, GitBranchPlus, MoreHorizontal, SquareArrowOutUpRight } from 'lucide-react'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
 import { AgentStateDot, agentStateLabel } from '@/components/AgentStateDot'
 import { ThreadAgentStateIndicator } from '@/components/activity/activity-thread-controls'
@@ -124,6 +125,12 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
                 <GitBranchPlus className="size-3.5" />
                 {t('agentCanvas.fork', 'Fork into a child workspace…')}
               </DropdownMenuItem>
+              {coordinator ? null : (
+                <DropdownMenuItem onSelect={() => setAgentCanvasCoordinator(thread)}>
+                  <Crown className="size-3.5" />
+                  {t('agentCanvas.setCoordinator', 'Set as coordinator')}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem onSelect={() => data.onJump(thread)}>
                 <SquareArrowOutUpRight className="size-3.5" />
                 {t('agentCanvas.jumpToWorkspace', 'Go to workspace')}

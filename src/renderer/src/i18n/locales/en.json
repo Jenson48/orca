@@ -24336,6 +24336,7 @@
     "createCoordinator": "Create coordinator",
     "removeCoordinator": "Remove coordinator",
     "coordinator": "Coordinator",
+    "setCoordinator": "Set as coordinator",
     "coordinatorLaunchFailed": "Could not link the coordinator. Check the launched agent.",
     "nextAttention": "Next agent needing me",
     "unread": "Unread",

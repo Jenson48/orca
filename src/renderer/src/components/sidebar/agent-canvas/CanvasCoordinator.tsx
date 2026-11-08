@@ -13,6 +13,7 @@ import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agen
 import { getStructuredAgentSessionTabsByPaneKey } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import { emptyAgentCanvasProject } from '../../../../../shared/agent-canvas-layout'
 import { coordinatorPrompt } from './coordinator-prompt'
+import type { StructuredAgentLaunchSettlement } from '@/lib/agent-session/launch/continuation/structured-agent-launch-settlement'
 
 export function CanvasCoordinator({ repoId }: { repoId: string }): React.JSX.Element {
   const t = useTranslate()
@@ -75,8 +76,10 @@ export function CanvasCoordinator({ repoId }: { repoId: string }): React.JSX.Ele
                 if (!result || 'refused' in result || result.surface.kind === 'host-published') {
                   throw new Error('Launch did not return a tab')
                 }
-                const tabId = result.surface.tabId
-                const paneKey = await waitForCoordinatorPane(tabId)
+                const paneKey = await waitForCoordinatorPane(
+                  result.surface.kind === 'local-chat' ? null : result.surface.tabId,
+                  result.structuredSettlement
+                )
                 useAppStore.getState().updateAgentCanvas((layout) => {
                   const project = layout.projects[repoId] ?? emptyAgentCanvasProject()
                   return {
@@ -119,18 +122,28 @@ export function CanvasCoordinator({ repoId }: { repoId: string }): React.JSX.Ele
   )
 }
 
-function waitForCoordinatorPane(tabId: string): Promise<string> {
+/** A chat's launch tab is provisional; its card key only exists once the session settles. */
+async function waitForCoordinatorPane(
+  terminalTabId: string | null,
+  settlement: Promise<StructuredAgentLaunchSettlement> | undefined
+): Promise<string> {
+  let sessionId: string | null = null
+  if (!terminalTabId) {
+    const settled = await settlement
+    if (settled?.kind !== 'structured' && settled?.kind !== 'visibility-unknown') {
+      throw new Error('Chat launch did not settle')
+    }
+    sessionId = settled.sessionId
+  }
   return new Promise((resolve, reject) => {
     const read = (): string | undefined => {
       const state = useAppStore.getState()
-      const chat = [...getStructuredAgentSessionTabsByPaneKey(state.unifiedTabsByWorktree)].find(
-        ([, tab]) => tab.id === tabId
-      )
-      if (chat) {
-        return chat[0]
+      if (sessionId) {
+        const chats = getStructuredAgentSessionTabsByPaneKey(state.unifiedTabsByWorktree)
+        return [...chats].find(([, tab]) => tab.entityId === sessionId)?.[0]
       }
-      const leaf = state.terminalLayoutsByTabId[tabId]?.activeLeafId
-      return leaf ? `${tabId}:${leaf}` : undefined
+      const leaf = terminalTabId ? state.terminalLayoutsByTabId[terminalTabId]?.activeLeafId : null
+      return leaf ? `${terminalTabId}:${leaf}` : undefined
     }
     const initial = read()
     if (initial) {
