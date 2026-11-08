@@ -146,18 +146,15 @@ export function CanvasSurface(props: {
 
   const flow = useReactFlow<AgentCanvasNode>()
   const initialized = useNodesInitialized()
+  const { attentionKey, onAttentionHandled } = props
   useEffect(() => {
-    if (!initialized || !props.attentionKey) {
+    if (!initialized || !attentionKey || !flow.getNode(attentionKey)) {
       return
     }
-    const key = props.attentionKey
-    if (!flow.getNode(key)) {
-      return
-    }
-    setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === key })))
-    void flow.fitView({ nodes: [{ id: key }], maxZoom: 1, padding: 0.5 })
-    props.onAttentionHandled?.()
-  }, [props.attentionKey, props.onAttentionHandled, initialized, flow])
+    setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === attentionKey })))
+    void flow.fitView({ nodes: [{ id: attentionKey }], maxZoom: 1, padding: 0.5 })
+    onAttentionHandled?.()
+  }, [attentionKey, onAttentionHandled, initialized, flow])
   const placedCount = built.length
 
   return (
