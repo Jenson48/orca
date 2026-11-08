@@ -1,5 +1,12 @@
 import { useRef, useState } from 'react'
-import { NodeResizer, NodeToolbar, type Node, type NodeProps } from '@xyflow/react'
+import {
+  Handle,
+  Position,
+  NodeResizer,
+  NodeToolbar,
+  type Node,
+  type NodeProps
+} from '@xyflow/react'
 import { Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -65,7 +72,7 @@ export function CanvasItemNode({ data, selected }: NodeProps<CanvasItem>): React
   }
   return (
     <div
-      className={`h-full min-h-10 rounded-md text-foreground ${selected ? 'ring-1 ring-primary' : ''}`}
+      className={`group h-full min-h-10 rounded-md text-foreground ${selected ? 'ring-1 ring-primary' : ''}`}
       style={
         frame
           ? {
@@ -75,6 +82,20 @@ export function CanvasItemNode({ data, selected }: NodeProps<CanvasItem>): React
           : undefined
       }
     >
+      {!frame && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+          />
+        </>
+      )}
       {frame && (
         <NodeResizer
           isVisible={selected}

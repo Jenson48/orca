@@ -1,3 +1,4 @@
+import { useCanvasHistory } from './use-canvas-history'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useAppStore } from '@/store'
@@ -103,6 +104,9 @@ export default function AgentCanvas(): React.JSX.Element {
     },
     [repoId, updateAgentCanvas]
   )
+  const history = useCanvasHistory(repoId, updateProject)
+  const editTab = (id: string, update: (tab: AgentCanvasTab) => AgentCanvasTab): void =>
+    history.commit((p) => ({ ...p, tabs: p.tabs.map((x) => (x.id === id ? update(x) : x)) }))
   const updateTab = useCallback(
     (tabId: string, update: (x: AgentCanvasTab) => AgentCanvasTab) =>
       updateProject((p) => ({ ...p, tabs: p.tabs.map((x) => (x.id === tabId ? update(x) : x)) })),
@@ -236,7 +240,8 @@ export default function AgentCanvas(): React.JSX.Element {
       {repoId && tab ? (
         <ReactFlowProvider key={`${repoId}:${tab.id}`}>
           <CanvasSurface
-            onEditTab={(update) => updateTab(tab.id, update)}
+            onRestore={history.restore}
+            onEditTab={(update) => editTab(tab.id, update)}
             tab={tab}
             tabs={project.tabs}
             threads={projectThreads}
@@ -252,7 +257,7 @@ export default function AgentCanvas(): React.JSX.Element {
               updateTab(tab.id, (x) => ({ ...x, cards: { ...x.cards, ...moved } }))
             }
             onMoveToTab={(paneKey, tabId) =>
-              updateProject((p) => moveAgentCanvasCards(p, [paneKey], tabId))
+              history.commit((p) => moveAgentCanvasCards(p, [paneKey], tabId))
             }
             onViewport={(viewport) => updateTab(tab.id, (x) => ({ ...x, viewport }))}
           />

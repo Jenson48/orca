@@ -98,6 +98,7 @@ const project: AgentCanvasProjectLayout = {
       id: 'main',
       name: 'Main',
       cards: { exp1: { x: 0, y: 0 }, exp2: { x: 280, y: 0 }, fork: { x: 560, y: 0 } },
+      edges: [{ id: 'plan', source: 'agent:exp1', target: 'agent:exp2', label: 'Review' }],
       items: {
         team: {
           type: 'frame',

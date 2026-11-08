@@ -70,7 +70,12 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
       )}
       aria-label={taskTitle}
     >
-      <Handle type="target" position={Position.Left} isConnectable={false} className="!opacity-0" />
+      <Handle
+        onClick={(event) => event.stopPropagation()}
+        type="target"
+        position={Position.Left}
+        className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
+      />
       <div className="flex min-w-0 items-start gap-1.5">
         <span className="mt-0.5 inline-flex shrink-0">
           {idle ? (
@@ -162,10 +167,11 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
         </>
       )}
       <Handle
+        onClick={(event) => event.stopPropagation()}
         type="source"
         position={Position.Right}
-        isConnectable={false}
-        className="!opacity-0"
+
+        className={selected ? '!opacity-100' : '!opacity-0 group-hover:!opacity-100'}
       />
     </div>
   )

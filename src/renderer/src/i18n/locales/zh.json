@@ -23261,6 +23261,9 @@
     "emerald": "翠绿",
     "violet": "紫罗兰",
     "rose": "玫瑰",
-    "fuchsia": "紫红"
+    "fuchsia": "紫红",
+    "edgeLabel": "箭头标签",
+    "addLabel": "添加标签",
+    "deleteEdge": "删除箭头"
   }
 }

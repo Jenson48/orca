@@ -1,3 +1,5 @@
+import { useCanvasEdges, canvasEdgeTypes } from './use-canvas-edges'
+import { canvasKeyboard } from './use-canvas-history'
 import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
 import { ZoomControls } from './CanvasZoomControls'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
@@ -33,6 +35,7 @@ type CanvasNode = AgentCanvasNode | CanvasItem
 const nodeTypes = { agent: AgentCanvasCard, text: CanvasItemNode, frame: CanvasItemNode }
 
 export function CanvasSurface(props: {
+  onRestore?: (redo: boolean) => void
   onEditTab?: (update: (tab: AgentCanvasTab) => AgentCanvasTab) => void
   onAttentionHandled?: () => void
   attentionKey?: string | null
@@ -193,6 +196,7 @@ export function CanvasSurface(props: {
   }, [tab.cards, threadByPane, lineage])
 
   const flow = useReactFlow<CanvasNode>()
+  const userEdges = useCanvasEdges(tab, nodes, props.onEditTab)
   const initialized = useNodesInitialized()
   const { attentionKey, onAttentionHandled } = props
   useEffect(() => {
@@ -207,9 +211,12 @@ export function CanvasSurface(props: {
 
   return (
     <div
-      className="relative min-h-0 flex-1"
+      className="relative min-h-0 flex-1 @container"
       tabIndex={0}
       onKeyDown={(event) => {
+        if (canvasKeyboard(event, userEdges.removeSelected, props.onRestore)) {
+          return
+        }
         if (
           event.code === 'KeyN' &&
           event.altKey &&
@@ -228,7 +235,11 @@ export function CanvasSurface(props: {
     >
       <ReactFlow<CanvasNode>
         nodes={nodes}
-        edges={edges}
+        edges={[...edges, ...userEdges.edges]}
+        edgeTypes={canvasEdgeTypes}
+        onEdgesChange={userEdges.onEdgesChange}
+        onConnect={userEdges.connect}
+        isValidConnection={userEdges.valid}
         nodeTypes={nodeTypes}
         onNodesChange={onNodesChange}
         onNodeClick={(_, node) => {
@@ -237,26 +248,23 @@ export function CanvasSurface(props: {
           }
         }}
         onNodeDragStop={(_, __, dragged) => {
-          props.onMoveCards(
-            Object.fromEntries(
-              dragged.filter((n) => n.type === 'agent').map((n) => [n.id, n.position])
-            )
-          )
-          const items = dragged.filter((n) => n.type !== 'agent')
-          if (items.length) {
-            props.onEditTab?.((current) => ({
-              ...current,
-              items: {
-                ...current.items,
-                ...Object.fromEntries(
-                  items.map((n) => [
-                    n.id.slice(5),
-                    { ...current.items![n.id.slice(5)], ...n.position }
-                  ])
-                )
-              }
-            }))
-          }
+          props.onEditTab?.((current) => ({
+            ...current,
+            cards: {
+              ...current.cards,
+              ...Object.fromEntries(
+                dragged.filter((n) => n.type === 'agent').map((n) => [n.id, n.position])
+              )
+            },
+            items: {
+              ...current.items,
+              ...Object.fromEntries(
+                dragged
+                  .filter((n) => n.type !== 'agent')
+                  .map((n) => [n.id.slice(5), { ...current.items![n.id.slice(5)], ...n.position }])
+              )
+            }
+          }))
         }}
         defaultViewport={tab.viewport ?? { x: 24, y: 24, zoom: 0.9 }}
         fitView={!tab.viewport && placedCount > 0}
@@ -264,12 +272,13 @@ export function CanvasSurface(props: {
         onMoveEnd={(_, viewport) => props.onViewport(viewport)}
         minZoom={0.2}
         maxZoom={2}
-        nodesConnectable={false}
+        nodesConnectable
         deleteKeyCode={null}
         proOptions={{ hideAttribution: true }}
         className="bg-worktree-sidebar"
       >
         <MiniMap
+          className="hidden @[520px]:block"
           pannable
           zoomable
           style={{

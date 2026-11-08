@@ -24362,6 +24362,9 @@
     "emerald": "Emerald",
     "violet": "Violet",
     "rose": "Rose",
-    "fuchsia": "Fuchsia"
+    "fuchsia": "Fuchsia",
+    "edgeLabel": "Arrow label",
+    "addLabel": "Add label",
+    "deleteEdge": "Delete arrow"
   }
 }
