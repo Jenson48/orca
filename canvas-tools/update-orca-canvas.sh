@@ -44,14 +44,14 @@ if [[ -z "$BUILT_APP" ]]; then
   exit 1
 fi
 
-if pgrep -f "$INSTALL_DIR/$APP_NAME.app/Contents/MacOS/" >/dev/null; then
+if pgrep -x "$APP_NAME" >/dev/null; then
   log "Quitting the running $APP_NAME…"
   osascript -e "tell application id \"$BUNDLE_ID\" to quit" || true
   for _ in {1..30}; do
-    pgrep -f "$INSTALL_DIR/$APP_NAME.app/Contents/MacOS/" >/dev/null || break
+    pgrep -x "$APP_NAME" >/dev/null || break
     sleep 1
   done
-  if pgrep -f "$INSTALL_DIR/$APP_NAME.app/Contents/MacOS/" >/dev/null; then
+  if pgrep -x "$APP_NAME" >/dev/null; then
     log "$APP_NAME is still running. Quit it and rerun with --skip-build."
     exit 1
   fi
