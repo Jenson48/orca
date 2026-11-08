@@ -105,7 +105,7 @@ const project: AgentCanvasProjectLayout = {
   activeTabId: 'main'
 }
 
-function Canvas(): React.JSX.Element {
+function Canvas({ compact = false }: { compact?: boolean }): React.JSX.Element {
   return (
     <div className="flex h-[360px] flex-col bg-worktree-sidebar text-foreground">
       <div className="flex items-center gap-1 border-b border-border px-2 py-1.5">
@@ -120,7 +120,7 @@ function Canvas(): React.JSX.Element {
       </div>
       <ReactFlowProvider>
         <CanvasSurface
-          tab={project.tabs[0]}
+          tab={{ ...project.tabs[0], viewport: { x: 16, y: 64, zoom: compact ? 0.5 : 0.85 } }}
           tabs={project.tabs}
           threads={threads}
           lineage={lineage}
@@ -141,3 +141,5 @@ export const threeAgents = defineFixture({
   width: 760,
   render: () => <Canvas />
 })
+
+export const compactAgents = defineFixture({ width: 760, render: () => <Canvas compact /> })

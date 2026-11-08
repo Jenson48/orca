@@ -92,3 +92,20 @@ describe('omitAgentCanvasTabPanes', () => {
     expect(Object.keys(next.projects.r.tabs[0].cards)).toEqual(['t2:b'])
   })
 })
+
+it.each(['parent', 'sibling'])('places beside a %s on another tab', (relative) => {
+  const project: AgentCanvasProjectLayout = {
+    activeTabId: 'main',
+    tabs: [
+      { id: 'main', name: 'Main', cards: {} },
+      { id: 'other', name: 'Other', cards: { [relative]: { x: 40, y: 60 } } }
+    ]
+  }
+  const next = placeNewAgentCanvasCards(project, 'main', [
+    { paneKey: 'new', nearPaneKeys: [relative] },
+    { paneKey: 'unrelated', nearPaneKeys: [] }
+  ])
+  expect(next?.tabs[1].cards.new).toEqual({ x: 320, y: 60 })
+  expect(next?.tabs[0].cards).toEqual({ unrelated: { x: 0, y: 0 } })
+  expect(project.tabs[1].cards.new).toBeUndefined()
+})

@@ -24333,6 +24333,7 @@
     "failed": "Couldn’t stop {{host}}. Turn off its browser control in Settings > SSH."
   },
   "agentCanvas": {
+    "nextAttention": "Next agent needing me",
     "unread": "Unread",
     "cardActions": "Card actions",
     "fork": "Fork into a child workspace…",

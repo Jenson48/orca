@@ -149,7 +149,7 @@ export type AgentCanvasPlacementRequest = {
   nearPaneKeys: readonly string[]
 }
 
-/** Puts every agent not yet on any tab onto `tabId`, beside its parent's card when one is there. */
+/** Places new cards beside the first available relative, falling back to the open tab. */
 export function placeNewAgentCanvasCards(
   project: AgentCanvasProjectLayout,
   tabId: string,
@@ -161,15 +161,25 @@ export function placeNewAgentCanvasCards(
   if (pending.length === 0 || !target) {
     return null
   }
-  const cards = { ...target.cards }
+  const tabs = [...project.tabs]
+  const changed = new Set<string>()
   for (const r of pending) {
-    const near = r.nearPaneKeys.map((k) => cards[k]).find(Boolean)
-    cards[r.paneKey] = findFreeAgentCanvasSlot(Object.values(cards), near)
+    const relative = r.nearPaneKeys
+      .map((key) => ({ key, tab: tabs.find((t) => key in t.cards) }))
+      .find((entry) => entry.tab)
+    let destination = relative?.tab ?? tabs.find((t) => t.id === tabId)!
+    if (!changed.has(destination.id)) {
+      const index = tabs.indexOf(destination)
+      destination = { ...destination, cards: { ...destination.cards } }
+      tabs[index] = destination
+      changed.add(destination.id)
+    }
+    destination.cards[r.paneKey] = findFreeAgentCanvasSlot(
+      Object.values(destination.cards),
+      relative ? destination.cards[relative.key] : undefined
+    )
   }
-  return {
-    ...project,
-    tabs: project.tabs.map((t) => (t.id === tabId ? { ...t, cards } : t))
-  }
+  return { ...project, tabs }
 }
 
 /** Moves cards to another tab, keeping their positions free of overlaps there. */

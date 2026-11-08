@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ReactFlowProvider } from '@xyflow/react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
@@ -25,11 +25,14 @@ import {
 import { CanvasTabStrip } from './AgentCanvasTabStrip'
 import { CanvasSurface } from './AgentCanvasSurface'
 import { useIdleAgentCanvasThreads } from './use-idle-agent-canvas-threads'
+import { needsAgentCanvasAttention } from './agent-canvas-appearance'
 
 const noop = (): void => {}
 
 /** Sidebar body that lays out one project's agents as cards on user-named canvas tabs. */
 export default function AgentCanvas(): React.JSX.Element {
+  const lastAttentionKey = useRef<string | null>(null)
+  const [attentionKey, setAttentionKey] = useState<string | null>(null)
   const t = useTranslate()
   const { storeData, visibleThreads, markAllReadThreads } = useAgentPaneThreads({
     query: '',
@@ -111,7 +114,32 @@ export default function AgentCanvas(): React.JSX.Element {
     [threads, repoId]
   )
 
-  // New agents land on the open tab, beside an agent of their parent workspace when it is there.
+  const needingAttention = useMemo(
+    () =>
+      projectThreads.filter(
+        (thread) =>
+          needsAgentCanvasAttention(thread) && project.tabs.some((x) => thread.paneKey in x.cards)
+      ),
+    [projectThreads, project.tabs]
+  )
+  const nextAttention = useCallback(() => {
+    const next =
+      needingAttention[
+        (needingAttention.findIndex((x) => x.paneKey === lastAttentionKey.current) + 1) %
+          needingAttention.length
+      ]
+    if (!next) {
+      return
+    }
+    const target = project.tabs.find((x) => next.paneKey in x.cards)!
+    lastAttentionKey.current = next.paneKey
+    setAttentionKey(next.paneKey)
+    updateProject((p) => ({ ...p, activeTabId: target.id }))
+    selectThread(next)
+  }, [needingAttention, project.tabs, updateProject, selectThread])
+  const handleAttention = useCallback(() => setAttentionKey(null), [])
+
+  // Relatives determine placement across tabs.
   useEffect(() => {
     if (projectThreads.length === 0) {
       return
@@ -212,6 +240,9 @@ export default function AgentCanvas(): React.JSX.Element {
             tabs={project.tabs}
             threads={projectThreads}
             lineage={lineage}
+            attentionKey={attentionKey}
+            onAttentionHandled={handleAttention}
+            onNextAttention={needingAttention.length ? nextAttention : undefined}
             onSelect={selectThread}
             onJump={jumpToWorkspace}
             onFork={forkThread}

@@ -3,6 +3,8 @@ import {
   Background,
   BackgroundVariant,
   MarkerType,
+  MiniMap,
+  useNodesInitialized,
   Panel,
   ReactFlow,
   applyNodeChanges,
@@ -12,7 +14,7 @@ import {
   type NodeChange
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { Minus, Plus } from 'lucide-react'
+import { Bell, Minus, Plus } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useTranslate } from '@/i18n/use-translate'
 import { Button } from '@/components/ui/button'
@@ -22,10 +24,19 @@ import { canCreateChildWorktree } from '@/components/sidebar/workspace-actions/c
 import { LOCAL_EXECUTION_HOST_ID } from '../../../../../shared/execution-host'
 import type { AgentCanvasTab, AgentCanvasViewport } from '../../../../../shared/agent-canvas-layout'
 import { AgentCanvasCard, type AgentCanvasCardData, type AgentCanvasNode } from './AgentCanvasCard'
+import { getShortcutPlatform } from '@/hooks/useShortcutLabel'
+import { formatKeybinding } from '../../../../../shared/keybindings'
+import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
+import { isEditableTarget } from '@/lib/editable-target'
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
+import { needsAgentCanvasAttention, agentCanvasWorkspaceColor } from './agent-canvas-appearance'
 
 const nodeTypes = { agent: AgentCanvasCard }
 
 export function CanvasSurface(props: {
+  onAttentionHandled?: () => void
+  attentionKey?: string | null
+  onNextAttention?: () => void
   tab: AgentCanvasTab
   tabs: AgentCanvasTab[]
   threads: AgentPaneThread[]
@@ -133,10 +144,43 @@ export function CanvasSurface(props: {
     return result
   }, [tab.cards, threadByPane, lineage])
 
+  const flow = useReactFlow<AgentCanvasNode>()
+  const initialized = useNodesInitialized()
+  useEffect(() => {
+    if (!initialized || !props.attentionKey) {
+      return
+    }
+    const key = props.attentionKey
+    if (!flow.getNode(key)) {
+      return
+    }
+    setNodes((ns) => ns.map((n) => ({ ...n, selected: n.id === key })))
+    void flow.fitView({ nodes: [{ id: key }], maxZoom: 1, padding: 0.5 })
+    props.onAttentionHandled?.()
+  }, [props.attentionKey, props.onAttentionHandled, initialized, flow])
   const placedCount = built.length
 
   return (
-    <div className="relative min-h-0 flex-1">
+    <div
+      className="relative min-h-0 flex-1"
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (
+          event.code === 'KeyN' &&
+          event.altKey &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.shiftKey &&
+          !event.repeat &&
+          !isEditableTarget(event.target) &&
+          props.onNextAttention
+        ) {
+          event.preventDefault()
+          event.stopPropagation()
+          props.onNextAttention()
+        }
+      }}
+    >
       <ReactFlow<AgentCanvasNode>
         nodes={nodes}
         edges={edges}
@@ -157,6 +201,25 @@ export function CanvasSurface(props: {
         proOptions={{ hideAttribution: true }}
         className="bg-worktree-sidebar"
       >
+        <MiniMap
+          pannable
+          zoomable
+          style={{
+            width: 120,
+            height: 80,
+            background: 'var(--card)',
+            border: '1px solid var(--border)'
+          }}
+          maskColor="color-mix(in srgb, var(--background) 70%, transparent)"
+          nodeColor={(node) => {
+            const thread = threadByPane.get(node.id)
+            return thread && needsAgentCanvasAttention(thread)
+              ? 'var(--status-warning)'
+              : thread
+                ? agentCanvasWorkspaceColor(thread.worktree.id)
+                : 'var(--muted)'
+          }}
+        />
         <Background variant={BackgroundVariant.Dots} gap={22} size={1.4} color="var(--border)" />
         {props.onAddAgent ? (
           <Panel position="top-left">
@@ -167,7 +230,7 @@ export function CanvasSurface(props: {
           </Panel>
         ) : null}
         <Panel position="top-right">
-          <ZoomControls />
+          <ZoomControls onNextAttention={props.onNextAttention} />
         </Panel>
         {placedCount === 0 ? (
           <Panel
@@ -187,12 +250,32 @@ export function CanvasSurface(props: {
   )
 }
 
-function ZoomControls(): React.JSX.Element {
+function ZoomControls({ onNextAttention }: { onNextAttention?: () => void }): React.JSX.Element {
   const t = useTranslate()
   const flow = useReactFlow()
   const { zoom } = useViewport()
   return (
     <div className="flex items-center rounded-md border border-border bg-card font-mono text-[11px] shadow-xs">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            disabled={!onNextAttention}
+            onClick={onNextAttention}
+            aria-label={t('agentCanvas.nextAttention', 'Next agent needing me')}
+          >
+            <Bell className="size-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="top" sideOffset={4}>
+          {t('agentCanvas.nextAttention', 'Next agent needing me')}
+          <ShortcutKeyCombo
+            className="ml-2"
+            keys={formatKeybinding('Alt+N', getShortcutPlatform())}
+          />
+        </TooltipContent>
+      </Tooltip>
       <Button
         type="button"
         variant="ghost"
