@@ -24,6 +24,7 @@ import {
 } from '../../../../../shared/agent-canvas-layout'
 import { CanvasTabStrip } from './AgentCanvasTabStrip'
 import { CanvasSurface } from './AgentCanvasSurface'
+import { useIdleAgentCanvasThreads } from './use-idle-agent-canvas-threads'
 
 const noop = (): void => {}
 
@@ -36,8 +37,12 @@ export default function AgentCanvas(): React.JSX.Element {
     groupBy: 'none',
     selectedPaneKey: null
   })
-  // Every agent except hidden child workers, regardless of the Activity view's scope filters.
-  const threads = markAllReadThreads
+  // Every agent except hidden child workers, regardless of the Activity view's scope filters, plus chats that have not started yet.
+  const idleThreads = useIdleAgentCanvasThreads(markAllReadThreads)
+  const threads = useMemo(
+    () => (idleThreads.length > 0 ? [...markAllReadThreads, ...idleThreads] : markAllReadThreads),
+    [markAllReadThreads, idleThreads]
+  )
   const { selectThread, jumpToWorkspace } = useActivityThreadActionBindings({
     visibleThreads,
     markAllReadThreads,

@@ -2,7 +2,7 @@ import React from 'react'
 import { Handle, Position, type Node, type NodeProps } from '@xyflow/react'
 import { GitBranchPlus, MoreHorizontal, SquareArrowOutUpRight } from 'lucide-react'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
-import { agentStateLabel } from '@/components/AgentStateDot'
+import { AgentStateDot, agentStateLabel } from '@/components/AgentStateDot'
 import { ThreadAgentStateIndicator } from '@/components/activity/activity-thread-controls'
 import {
   activityThreadRowCopy,
@@ -28,6 +28,7 @@ import {
   AGENT_CANVAS_CARD_HEIGHT,
   AGENT_CANVAS_CARD_WIDTH
 } from '../../../../../shared/agent-canvas-layout'
+import { isIdleAgentCanvasThread } from './use-idle-agent-canvas-threads'
 
 export type AgentCanvasCardData = {
   thread: AgentPaneThread
@@ -48,7 +49,8 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
   const t = useTranslate()
   const { thread } = data
   const { taskTitle, statusLine, workspaceLabel } = activityThreadRowCopy(thread, t)
-  const state = activityThreadStatusId(thread)
+  const idle = isIdleAgentCanvasThread(thread)
+  const state = idle ? 'idle' : activityThreadStatusId(thread)
 
   return (
     <div
@@ -63,7 +65,11 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
       <Handle type="target" position={Position.Left} isConnectable={false} className="!opacity-0" />
       <div className="flex min-w-0 items-start gap-1.5">
         <span className="mt-0.5 inline-flex shrink-0">
-          <ThreadAgentStateIndicator thread={thread} />
+          {idle ? (
+            <AgentStateDot state="idle" size="md" title={agentStateLabel('idle')} />
+          ) : (
+            <ThreadAgentStateIndicator thread={thread} />
+          )}
         </span>
         <div className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-5">
           {taskTitle}
