@@ -48,7 +48,7 @@ export function CanvasCoordinator({ repoId }: { repoId: string }): React.JSX.Ele
         }}
       >
         <Crown className="size-4" />
-        {coordinator ? null : label}
+        {label}
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getStructuredAgentSessionTabsByPaneKey } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import type { AgentPaneThread } from '@/components/activity/activity-thread-types'
+import { canvasWorktree } from './canvas-worktree'
 import { readWorktreeAgentRows } from '../workspace-card/activity/worktree-agent-rows-snapshot'
 import type { TerminalTab } from '../../../../../shared/workspace-layout/terminal-tab-types'
 import type { Worktree } from '../../../../../shared/worktree/types'
@@ -44,7 +45,7 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
     for (const [paneKey, tab] of getStructuredAgentSessionTabsByPaneKey(unifiedTabs)) {
       const worktree = known.has(paneKey)
         ? undefined
-        : (getKnownWorktreeById(tab.worktreeId, tab.executionHostId) as Worktree | undefined)
+        : canvasWorktree(tab.worktreeId, getKnownWorktreeById(tab.worktreeId, tab.executionHostId))
       if (!worktree) {
         continue
       }
@@ -74,7 +75,7 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
       }
       const tab = terminalTabs[entry.worktreeId]?.find((t) => t.id === entry.tabId)
       const worktree = tab
-        ? (getKnownWorktreeById(entry.worktreeId) as Worktree | undefined)
+        ? canvasWorktree(entry.worktreeId, getKnownWorktreeById(entry.worktreeId))
         : undefined
       if (tab && worktree) {
         known.add(entry.paneKey)
@@ -87,7 +88,7 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
     void paneTitles
     const state = useAppStore.getState()
     for (const worktreeId of Object.keys(terminalTabs)) {
-      const worktree = getKnownWorktreeById(worktreeId) as Worktree | undefined
+      const worktree = canvasWorktree(worktreeId, getKnownWorktreeById(worktreeId))
       if (!worktree) {
         continue
       }

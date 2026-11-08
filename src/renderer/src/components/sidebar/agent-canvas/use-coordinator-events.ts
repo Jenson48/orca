@@ -3,6 +3,7 @@ import { useAppStore } from '@/store'
 import { sendMessageToAgent } from '@/lib/agent-message-send'
 import { getStructuredAgentSessionTabsByPaneKey } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
+import { canvasWorktree } from './canvas-worktree'
 import {
   CoordinatorEvents,
   formatCoordinatorEvents,
@@ -48,7 +49,9 @@ export function useCoordinatorEvents(): void {
           Object.entries(state.tabsByWorktree).find(([, tabs]) =>
             tabs.some((tab) => tab.id === tabId)
           )?.[0]
-        const worktree = worktreeId ? worktrees.get(worktreeId) : undefined
+        const worktree = worktreeId
+          ? canvasWorktree(worktreeId, worktrees.get(worktreeId))
+          : undefined
         if (!worktree) {
           continue
         }
