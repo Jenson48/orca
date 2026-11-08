@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useAppStore } from '@/store'
 import { getStructuredAgentSessionTabsByPaneKey } from '@/components/native-chat/session/status/structured-agent-session-tabs'
 import type { AgentPaneThread } from '@/components/activity/activity-thread-types'
-import { parsePaneKey } from '../../../../../shared/workspace-layout/stable-pane-id'
+import { readWorktreeAgentRows } from '../workspace-card/activity/worktree-agent-rows-snapshot'
 import type { TerminalTab } from '../../../../../shared/workspace-layout/terminal-tab-types'
 import type { Worktree } from '../../../../../shared/worktree/types'
 
@@ -37,6 +37,7 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
   const statusByPane = useAppStore((s) => s.agentStatusByPaneKey)
   const terminalTabs = useAppStore((s) => s.tabsByWorktree)
   const foreground = useAppStore((s) => s.paneForegroundAgentByPaneKey)
+  const paneTitles = useAppStore((s) => s.runtimePaneTitlesByTabId)
   return useMemo(() => {
     const known = new Set(threads.map((thread) => thread.paneKey))
     const idle: AgentPaneThread[] = []
@@ -80,26 +81,34 @@ export function useIdleAgentCanvasThreads(threads: readonly AgentPaneThread[]): 
         idle.push(idleThread(entry.paneKey, worktree, tab, entry.agentType ?? 'unknown'))
       }
     }
-    // Terminal agents recognized from the pane's foreground process (no hook status yet, e.g. after a restart).
-    for (const [paneKey, entry] of Object.entries(foreground)) {
-      const tabId = parsePaneKey(paneKey)?.tabId
-      if (known.has(paneKey) || !entry.agent || entry.shellForeground || !tabId) {
+    // Every other agent a workspace card lists (title- or process-detected, retained), so the canvas matches the sidebar.
+    // Rows read the store snapshot; these subscriptions only trigger the recompute.
+    void foreground
+    void paneTitles
+    const state = useAppStore.getState()
+    for (const worktreeId of Object.keys(terminalTabs)) {
+      const worktree = getKnownWorktreeById(worktreeId) as Worktree | undefined
+      if (!worktree) {
         continue
       }
-      for (const [worktreeId, tabs] of Object.entries(terminalTabs)) {
-        const tab = tabs.find((t) => t.id === tabId)
-        const worktree = tab
-          ? (getKnownWorktreeById(worktreeId) as Worktree | undefined)
-          : undefined
-        if (tab && worktree) {
-          known.add(paneKey)
-          idle.push(idleThread(paneKey, worktree, tab, entry.agent as AgentPaneThread['agentType']))
-          break
+      for (const row of readWorktreeAgentRows(state, worktreeId)) {
+        if (row.rowSource === 'subagent' || known.has(row.paneKey)) {
+          continue
         }
+        known.add(row.paneKey)
+        idle.push(idleThread(row.paneKey, worktree, row.tab, row.agentType))
       }
     }
     return idle
-  }, [threads, unifiedTabs, statusByPane, terminalTabs, foreground, getKnownWorktreeById])
+  }, [
+    threads,
+    unifiedTabs,
+    statusByPane,
+    terminalTabs,
+    foreground,
+    paneTitles,
+    getKnownWorktreeById
+  ])
 }
 
 /** A card with no status history has not started yet. */
