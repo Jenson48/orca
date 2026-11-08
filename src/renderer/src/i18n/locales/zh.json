@@ -20189,7 +20189,9 @@
       "openActivity": "查看活动",
       "closeActivity": "关闭活动视图",
       "projects": "项目",
-      "workspaces": "工作区"
+      "workspaces": "工作区",
+      "openAgentCanvas": "在画布上查看 agent",
+      "closeAgentCanvas": "关闭画布视图"
     }
   },
   "browser": {
@@ -23228,5 +23230,26 @@
     "loadFailed": "无法加载 Git 历史记录",
     "updateHost": "请更新 {{host}} 上的 Orca 以打开 Git 图",
     "title": "Git 图"
+  },
+  "agentCanvas": {
+    "unread": "未读",
+    "cardActions": "卡片操作",
+    "fork": "Fork 为子工作区…",
+    "jumpToWorkspace": "前往工作区",
+    "moveToTab": "移到标签页",
+    "noProjects": "添加一个项目后，这里会显示它的 agent。",
+    "project": "项目",
+    "newTabName": "标签 {{n}}",
+    "renameHint": "双击重命名",
+    "closeTab": "关闭 {{name}}",
+    "closeTabHint": "关闭标签页，上面的卡片会移回 Main",
+    "newTab": "新标签页",
+    "local": "本地",
+    "addAgent": "Agent",
+    "emptyProject": "这个项目还没有 agent，点 + Agent 新建一个。",
+    "emptyTab": "这个标签页是空的，可以从其他标签页把卡片移过来。",
+    "zoomOut": "缩小",
+    "zoomIn": "放大",
+    "fit": "适应"
   }
 }

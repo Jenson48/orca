@@ -155,6 +155,35 @@ export const UiUpdateFields = z
     agentsShowSearch: z.boolean().optional(),
     agentsReadFilter: z.enum(THREAD_READ_FILTER_VALUES).optional(),
     agentsGroupBy: z.enum(ACTIVITY_GROUP_BY_VALUES).optional(),
+    agentCanvas: z
+      .object({
+        repoId: z.string().nullable().optional(),
+        width: z.number().finite().optional(),
+        projects: z.record(
+          z.string(),
+          z.object({
+            activeTabId: z.string(),
+            tabs: z.array(
+              z.object({
+                id: z.string(),
+                name: z.string(),
+                cards: z.record(
+                  z.string(),
+                  z.object({ x: z.number().finite(), y: z.number().finite() })
+                ),
+                viewport: z
+                  .object({
+                    x: z.number().finite(),
+                    y: z.number().finite(),
+                    zoom: z.number().finite()
+                  })
+                  .optional()
+              })
+            )
+          })
+        )
+      })
+      .optional(),
     workspaceHostOrder: z.array(z.string()).optional(),
     automationHostFilter: z
       .union([

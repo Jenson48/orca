@@ -6,7 +6,7 @@ import { SidebarHeaderActions } from './sidebar-header-actions'
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverAnchor, PopoverArrow, PopoverContent } from '@/components/ui/popover'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { Sparkles, Bell } from 'lucide-react'
+import { Sparkles, Bell, Workflow } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type SidebarHeaderProps = {
@@ -30,6 +30,11 @@ const SidebarHeader = React.memo(function SidebarHeader({
   const setSidebarBody = useAppStore((s) => s.setSidebarBody)
   const updateSettings = useAppStore((s) => s.updateSettings)
   const agentsViewActive = sidebarBody === 'agents'
+  const canvasViewActive = sidebarBody === 'canvas'
+  const canvasLabel = t(
+    canvasViewActive ? 'dashboard.sidebar.closeAgentCanvas' : 'dashboard.sidebar.openAgentCanvas',
+    canvasViewActive ? 'Turn off canvas view' : 'View agents on a canvas'
+  )
   const activityBadgeId = useId()
   const agentsSidebarIntroShown = useAppStore((s) => s.settings?.agentsSidebarIntroShown === true)
   const migratedFromExperimental = useAppStore(
@@ -68,6 +73,28 @@ const SidebarHeader = React.memo(function SidebarHeader({
         <div ref={projectsCollapseTarget} className="flex shrink-0 items-center empty:hidden" />
       </div>
       <div className="flex shrink-0 items-center gap-1">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className={cn(
+                'text-muted-foreground',
+                canvasViewActive &&
+                  'bg-foreground/10 text-foreground hover:bg-foreground/15 dark:hover:bg-foreground/15'
+              )}
+              aria-label={canvasLabel}
+              aria-pressed={canvasViewActive}
+              onClick={() => setSidebarBody?.(canvasViewActive ? 'workspaces' : 'canvas')}
+            >
+              <Workflow className="size-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" sideOffset={6}>
+            {canvasLabel}
+          </TooltipContent>
+        </Tooltip>
         <Popover
           open={introOpen}
           onOpenChange={(open) => {

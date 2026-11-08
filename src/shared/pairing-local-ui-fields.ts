@@ -24,6 +24,8 @@ export const PAIRING_LOCAL_UI_FIELDS = [
   'agentsShowSearch',
   'agentsReadFilter',
   'agentsGroupBy',
+  // Canvas layout is arranged for this client's window size.
+  'agentCanvas',
   'activityClearedAtByPaneKey',
   'manuallyUnreadTurnsByPaneKey'
 ] as const satisfies readonly (keyof PersistedUIState)[]

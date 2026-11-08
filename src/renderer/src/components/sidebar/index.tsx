@@ -24,9 +24,16 @@ import { LocalGitToolchainScanBanner } from './LocalGitToolchainScanBanner'
 import { SeveredTerminalDaemonBanner } from './SeveredTerminalDaemonBanner'
 import { StalledTerminalDaemonBanner } from './StalledTerminalDaemonBanner'
 import { StartupWorktreeRefreshStatus } from './StartupWorktreeRefreshStatus'
+import {
+  AGENT_CANVAS_DEFAULT_WIDTH,
+  AGENT_CANVAS_MAX_WIDTH,
+  AGENT_CANVAS_MIN_WIDTH,
+  clampAgentCanvasWidth
+} from '../../../../shared/agent-canvas-layout'
 
 // Load the shared Activity badge/list pipeline after the sidebar shell.
 const SidebarAgentsList = lazyWithRetry(() => import('./SidebarAgentsList'))
+const AgentCanvas = lazyWithRetry(() => import('./agent-canvas/AgentCanvas'))
 
 const WorktreeMetaDialog = lazyWithRetry(
   () => import('./workspace-card/metadata/WorktreeMetaDialog')
@@ -70,6 +77,14 @@ function Sidebar({
   const startupWorktreeRefreshCompleted = useAppStore((s) => s.startupWorktreeRefreshCompleted)
   const settings = useAppStore((s) => s.settings)
   const sidebarBody = useAppStore((s) => s.sidebarBody ?? 'workspaces')
+  const canvasShowing = sidebarBody === 'canvas'
+  const canvasWidth = useAppStore((s) => s.agentCanvas?.width ?? AGENT_CANVAS_DEFAULT_WIDTH)
+  const updateAgentCanvas = useAppStore((s) => s.updateAgentCanvas)
+  const setCanvasWidth = React.useCallback(
+    (width: number) =>
+      updateAgentCanvas((layouts) => ({ ...layouts, width: clampAgentCanvasWidth(width) })),
+    [updateAgentCanvas]
+  )
   const showAgentDashboard = settings?.experimentalAgentDashboardPopout === true
   const agentDashboardDrawerOpen = useAppStore((s) => s.agentDashboardDrawerOpen)
   const setAgentDashboardDrawerOpen = useAppStore((s) => s.setAgentDashboardDrawerOpen)
@@ -135,10 +150,11 @@ function Sidebar({
   }, [repoCount, startupWorktreeRefreshCompleted, fetchAllWorktrees])
 
   useEffect(() => {
-    if (!sidebarOpen && workspaceBoardRenderedOpen) {
+    // The board is anchored to the list's width and lists workspaces the canvas replaces.
+    if ((!sidebarOpen || canvasShowing) && workspaceBoardRenderedOpen) {
       closeWorkspaceBoard()
     }
-  }, [closeWorkspaceBoard, sidebarOpen, workspaceBoardRenderedOpen])
+  }, [canvasShowing, closeWorkspaceBoard, sidebarOpen, workspaceBoardRenderedOpen])
 
   useEffect(() => {
     if (!showAgentDashboard && agentDashboardDrawerOpen) {
@@ -148,18 +164,18 @@ function Sidebar({
 
   const { containerRef, onResizeStart, isResizing } = useSidebarResize<HTMLDivElement>({
     isOpen: sidebarOpen,
-    width: sidebarWidth,
-    minWidth: MIN_WIDTH,
-    maxWidth: MAX_WIDTH,
+    width: canvasShowing ? canvasWidth : sidebarWidth,
+    minWidth: canvasShowing ? AGENT_CANVAS_MIN_WIDTH : MIN_WIDTH,
+    maxWidth: canvasShowing ? AGENT_CANVAS_MAX_WIDTH : MAX_WIDTH,
     deltaSign: 1,
-    setWidth: setSidebarWidth,
+    setWidth: canvasShowing ? setCanvasWidth : setSidebarWidth,
     onDraftWidthChange: setSidebarLiveWidth
   })
 
   const drawerCoversSeam =
     workspaceBoardRenderedOpen || (showAgentDashboard && agentDashboardDrawerOpen)
 
-  useWorkspaceRevealBodyRedirect(sidebarOpen && sidebarBody === 'agents')
+  useWorkspaceRevealBodyRedirect(sidebarOpen && sidebarBody !== 'workspaces')
   // A collapsed sidebar takes no drops.
   const sidebarRef = React.useCallback(
     (node: HTMLDivElement | null) => {
@@ -208,7 +224,12 @@ function Sidebar({
                   />
                 </ActivityThreadCollapseContext.Provider>
               </React.Suspense>
-              {sidebarBody !== 'agents' && (
+              {canvasShowing && (
+                <React.Suspense fallback={<div className="min-h-0 flex-1" />}>
+                  <AgentCanvas />
+                </React.Suspense>
+              )}
+              {sidebarBody === 'workspaces' && (
                 <>
                   <LocalGitToolchainScanBanner />
                   <StartupWorktreeRefreshStatus />

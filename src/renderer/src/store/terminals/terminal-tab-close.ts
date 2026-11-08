@@ -25,6 +25,7 @@ import { noteAgentLaunchPaneClosedByUser } from '@/lib/agent-session/launch/pane
 import { settleAgentLaunchPaneStart } from '@/lib/agent-session/launch/pane/agent-launch-pane-start'
 import { settleAttentionRemovedBy } from '../slices/workspace-attention/attention-removal-follow-up'
 import { runAsAutomaticDeselection } from '../workspaces/selection/active-worktree-deselection-intent'
+import { omitAgentCanvasTabPanes } from '../../../../shared/agent-canvas-layout'
 
 export function createTerminalTabCloseActions(
   set: TerminalStoreSet,
@@ -202,6 +203,10 @@ export function createTerminalTabCloseActions(
             deferredSshSessionIdsByTabId: nextDeferredSshSessionIdsByTabId,
             pendingReconnectPtyIdByTabId: nextPendingReconnectPtyIdByTabId,
             runtimePaneTitlesByTabId: nextRuntimePaneTitlesByTabId,
+            // A process exit keeps resume authority, so its card keeps its tab and spot.
+            ...(retiresSession
+              ? { agentCanvas: omitAgentCanvasTabPanes(s.agentCanvas, new Set(closingTabIds)) }
+              : {}),
             ...(nextUnverifiedPtyLossTabIds !== s.unverifiedPtyLossTabIds
               ? { unverifiedPtyLossTabIds: nextUnverifiedPtyLossTabIds }
               : {}),

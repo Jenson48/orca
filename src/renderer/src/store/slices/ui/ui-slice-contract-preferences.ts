@@ -1,4 +1,5 @@
 import type { PersistedUIState } from '../../../../../shared/persisted-ui-state-types'
+import type { AgentCanvasLayouts } from '../../../../../shared/agent-canvas-layout'
 import type { BrowserDevToolsDockLayout } from '../../../../../shared/browser-devtools-dock'
 import type {
   ActivityGroupBy,
@@ -29,8 +30,11 @@ import type { UISliceCore } from './ui-slice-contract-core'
 export type UISlicePreferences = {
   gitGraphFiltersByWorktree?: PersistedUIState['gitGraphFiltersByWorktree']
   /** Which list the sidebar body shows. Navigator-only; does not change the active view. */
-  sidebarBody: 'workspaces' | 'agents'
+  sidebarBody: 'workspaces' | 'agents' | 'canvas'
   setSidebarBody: (body: UISlicePreferences['sidebarBody']) => void
+  agentCanvas: AgentCanvasLayouts
+  /** Persists after a short debounce: drags and pans update it continuously. */
+  updateAgentCanvas: (update: (layouts: AgentCanvasLayouts) => AgentCanvasLayouts) => void
   groupBy: 'none' | 'workspace-status' | 'repo' | 'pr-status'
   setGroupBy: (g: UISlicePreferences['groupBy']) => void
   sortBy: 'name' | 'smart' | 'recent' | 'repo' | 'manual'

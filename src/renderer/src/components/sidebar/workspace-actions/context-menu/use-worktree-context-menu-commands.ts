@@ -1,12 +1,11 @@
 import { useCallback } from 'react'
 import type { useAppStore } from '@/store'
 import type { Repo } from '../../../../../../shared/repo-types'
+import { getRepoExecutionHostId } from '../../../../../../shared/execution-host'
 import {
-  getRepoExecutionHostId,
-  LOCAL_EXECUTION_HOST_ID
-} from '../../../../../../shared/execution-host'
-import { getRepoWorkspaceCreationTargetHint } from '@/lib/project-host-workspace-target'
-import { resolveReviewRepository } from '@/lib/review-owner'
+  openChildWorktreeComposer,
+  resolveChildWorktreeRepository
+} from '@/lib/workspace/creation/child-worktree-composer'
 import type { WorkspaceStatusDefinition, Worktree } from '../../../../../../shared/worktree/types'
 import {
   createWorktreeContextMenuDeleteIntent,
@@ -24,16 +23,6 @@ import {
   planWorkspaceStatusAssignment,
   preserveDeleteSiblingPosition
 } from './worktree-context-menu-policy'
-
-function resolveChildWorktreeRepository(repos: readonly Repo[], worktree: Worktree): Repo | null {
-  return resolveReviewRepository(repos, {
-    ...worktree,
-    // Unstamped clicked rows are local, regardless of the active workspace's owner.
-    hostId:
-      worktree.hostId ??
-      (worktree.runtimeOwnerEnvironmentId?.trim() ? undefined : LOCAL_EXECUTION_HOST_ID)
-  })
-}
 
 export function useWorktreeContextMenuCommands(args: {
   activeContextWorktrees: readonly Worktree[]
@@ -169,12 +158,12 @@ export function useWorktreeContextMenuCommands(args: {
       return
     }
     args.setMenuOpenState(false)
-    args.openModal('new-workspace-composer', {
-      initialRepoId: repo.id,
-      initialWorkspaceTarget: getRepoWorkspaceCreationTargetHint(repo, state.projectHostSetups),
-      initialParentWorktreeId: args.worktree.id,
-      telemetrySource: 'sidebar'
-    })
+    openChildWorktreeComposer(
+      { ...state, openModal: args.openModal },
+      args.worktree,
+      args.folderWorkspaceId,
+      'sidebar'
+    )
   }, [args])
   const sleepWorktreesAfterMenuClose = useCallback(
     (worktrees: readonly Worktree[]) => {

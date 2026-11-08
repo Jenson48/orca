@@ -1,6 +1,7 @@
 import type { AppState } from '../../../types'
 import { removeTabsAttention } from '../../workspace-attention/subject-attention-transitions'
 import type { createWorktreePurgeOmitters } from './worktree-purge-omitters'
+import { omitAgentCanvasTabPanes } from '../../../../../../shared/agent-canvas-layout'
 
 type WorktreePurgeOmitters = ReturnType<typeof createWorktreePurgeOmitters>
 
@@ -59,6 +60,7 @@ export function buildWorktreePurgeSurfacePatch(
     activityClearedAtByPaneKey: omitByPaneKeyTabPrefix(s.activityClearedAtByPaneKey),
     manuallyUnreadTurnsByPaneKey: omitByPaneKeyTabPrefix(s.manuallyUnreadTurnsByPaneKey),
     paneForegroundAgentByPaneKey: omitByPaneKeyTabPrefix(s.paneForegroundAgentByPaneKey),
+    agentCanvas: omitAgentCanvasTabPanes(s.agentCanvas, doomedTabIds),
     sleepingAgentSessionsByPaneKey: sleeping.sleepingAgentSessionsByPaneKey,
     ...removeTabsAttention(s, doomedTabIds),
     lastTerminalInputAtByPaneKey: omitByPaneKeyTabPrefix(s.lastTerminalInputAtByPaneKey),

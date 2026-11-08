@@ -21584,7 +21584,9 @@
       "openActivity": "View activity",
       "closeActivity": "Turn off activity view",
       "projects": "Projects",
-      "workspaces": "Workspaces"
+      "workspaces": "Workspaces",
+      "openAgentCanvas": "View agents on a canvas",
+      "closeAgentCanvas": "Turn off canvas view"
     }
   },
   "runtimeRpc": {
@@ -24329,5 +24331,26 @@
     "stopped": "{{host}} stopped controlling browser tabs until Orca restarts.",
     "disallowed": "{{host}} can no longer control browser tabs. Turn it back on in Settings > SSH.",
     "failed": "Couldn’t stop {{host}}. Turn off its browser control in Settings > SSH."
+  },
+  "agentCanvas": {
+    "unread": "Unread",
+    "cardActions": "Card actions",
+    "fork": "Fork into a child workspace…",
+    "jumpToWorkspace": "Go to workspace",
+    "moveToTab": "Move to tab",
+    "noProjects": "Add a project to see its agents here.",
+    "project": "Project",
+    "newTabName": "Tab {{n}}",
+    "renameHint": "Double-click to rename",
+    "closeTab": "Close {{name}}",
+    "closeTabHint": "Close tab; its cards move to Main",
+    "newTab": "New tab",
+    "local": "Local",
+    "addAgent": "Agent",
+    "emptyProject": "No agents in this project yet. Start one with + Agent.",
+    "emptyTab": "This tab is empty. Move cards here from another tab.",
+    "zoomOut": "Zoom out",
+    "zoomIn": "Zoom in",
+    "fit": "Fit"
   }
 }

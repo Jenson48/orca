@@ -52,6 +52,7 @@ describe('web UI preload API pairing-local fields', () => {
     agentsShowSearch: false,
     agentsReadFilter: 'unread',
     agentsGroupBy: 'project',
+    agentCanvas: { repoId: 'repo-b', projects: {} },
     activityClearedAtByPaneKey: { 'tab-1:leaf-1': 123 },
     manuallyUnreadTurnsByPaneKey: { 'tab-1:leaf-1': 321 }
   }
@@ -72,6 +73,7 @@ describe('web UI preload API pairing-local fields', () => {
     agentsShowSearch: true,
     agentsReadFilter: 'all',
     agentsGroupBy: 'status',
+    agentCanvas: { repoId: 'repo-a', projects: {} },
     activityClearedAtByPaneKey: { 'tab-2:leaf-2': 456 },
     manuallyUnreadTurnsByPaneKey: { 'tab-2:leaf-2': 654 }
   }

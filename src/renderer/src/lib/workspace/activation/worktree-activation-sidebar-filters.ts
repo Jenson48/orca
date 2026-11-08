@@ -11,7 +11,7 @@ import { revealRepoInProjectFilter } from '@/components/sidebar/worktree-list/co
 export function liftSidebarFiltersHidingWorktree(wt: Worktree): void {
   const state = useAppStore.getState()
   // Not in the activity view: the reveal is skipped there, so lifting would only discard filters.
-  if (state.sidebarBody === 'agents') {
+  if (state.sidebarBody !== 'workspaces') {
     return
   }
   revealRepoInProjectFilter(state, wt.repoId)

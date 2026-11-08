@@ -8,6 +8,7 @@ import type { AgentStatusSlice } from './agent-status-slice-contract'
 import type { AgentStatusRuntime } from './agent-status-runtime'
 import { buildAgentStatusTabPrefixDropPatch } from './agent-status-drop-reducer'
 import { pruneMigrationUnsupportedEntries } from './agent-status-migration-unsupported-entries'
+import { omitAgentCanvasPaneKeys } from '../../../../../shared/agent-canvas-layout'
 import {
   retainedAgentEntryFromLive,
   shouldReplaceRetainedWithLive
@@ -57,6 +58,9 @@ export function createAgentStatusDropActions(
         const nextConversations = opts?.paneRemoved
           ? removePaneKeys(s.agentConversationsByPaneKey, new Set([paneKey]))
           : s.agentConversationsByPaneKey
+        const nextCanvas = opts?.paneRemoved
+          ? omitAgentCanvasPaneKeys(s.agentCanvas, new Set([paneKey]))
+          : s.agentCanvas
         const hasLaunchConfig = paneKey in s.agentLaunchConfigByPaneKey
         const nextLaunchConfigs = hasLaunchConfig
           ? { ...s.agentLaunchConfigByPaneKey }
@@ -78,7 +82,8 @@ export function createAgentStatusDropActions(
               : {}),
             ...(nextManualUnread !== s.manuallyUnreadTurnsByPaneKey
               ? { manuallyUnreadTurnsByPaneKey: nextManualUnread }
-              : {})
+              : {}),
+            ...(nextCanvas !== s.agentCanvas ? { agentCanvas: nextCanvas } : {})
           }
           return Object.keys(cleanupPatch).length > 0 ? cleanupPatch : s
         }
@@ -105,6 +110,7 @@ export function createAgentStatusDropActions(
             : {}),
           activityClearedAtByPaneKey: nextClearedAt,
           manuallyUnreadTurnsByPaneKey: nextManualUnread,
+          ...(nextCanvas !== s.agentCanvas ? { agentCanvas: nextCanvas } : {}),
           ...(needsSuppressor
             ? {
                 retentionSuppressedPaneKeys: {

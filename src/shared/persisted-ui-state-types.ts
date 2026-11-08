@@ -1,4 +1,5 @@
 import type { GitHistoryRefs } from './git/history/git-history-types'
+import type { AgentCanvasLayouts } from './agent-canvas-layout'
 import type { JiraQuickFilterState } from './jira/jira-quick-filters'
 import type { BrowserDevToolsDockLayout } from './browser-devtools-dock'
 import type { JiraSavedFilterState } from './jira/jira-saved-filters'
@@ -106,6 +107,7 @@ export type PersistedUIState = {
   agentsReadFilter?: ThreadReadFilter
   /** Agents-view thread grouping. Absent means 'status'. */
   agentsGroupBy?: ActivityGroupBy
+  agentCanvas?: AgentCanvasLayouts
   collapsedGroups: string[]
   uiZoomLevel: number
   editorFontZoomLevel: number
