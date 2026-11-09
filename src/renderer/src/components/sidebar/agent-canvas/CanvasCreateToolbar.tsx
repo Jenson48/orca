@@ -1,12 +1,15 @@
+import { CanvasBatchLaunch } from './CanvasBatchLaunch'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useTranslate } from '@/i18n/use-translate'
 
 export function CanvasCreateToolbar({
+  repoId,
   onAgent,
   onCreate
 }: {
+  repoId?: string
   onAgent?: () => void
   onCreate: (type: 'text' | 'frame') => void
 }): React.JSX.Element {
@@ -19,6 +22,7 @@ export function CanvasCreateToolbar({
           {t('agentCanvas.addAgent', 'Agent')}
         </Button>
       )}
+      {repoId && <CanvasBatchLaunch repoId={repoId} />}
       {(['text', 'frame'] as const).map((type) => (
         <Tooltip key={type}>
           <TooltipTrigger asChild>

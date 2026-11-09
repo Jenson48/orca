@@ -123,7 +123,7 @@ export function CanvasCoordinator({ repoId }: { repoId: string }): React.JSX.Ele
 }
 
 /** A chat's launch tab is provisional; its card key only exists once the session settles. */
-async function waitForCoordinatorPane(
+export async function waitForCoordinatorPane(
   terminalTabId: string | null,
   settlement: Promise<StructuredAgentLaunchSettlement> | undefined
 ): Promise<string> {

@@ -1,3 +1,4 @@
+import type { CanvasCardStyle } from '../../../../../shared/agent-canvas-card-styles'
 import { useCanvasEdges, canvasEdgeTypes } from './use-canvas-edges'
 import { canvasKeyboard } from './use-canvas-history'
 import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
@@ -35,6 +36,11 @@ type CanvasNode = AgentCanvasNode | CanvasItem
 const nodeTypes = { agent: AgentCanvasCard, text: CanvasItemNode, frame: CanvasItemNode }
 
 export function CanvasSurface(props: {
+  repoId?: string
+  cardStyles?: Record<string, CanvasCardStyle>
+  onStyle?: (key: string, style: CanvasCardStyle) => void
+  snapToGrid?: boolean
+  onToggleSnap?: () => void
   onRestore?: (redo: boolean) => void
   onEditTab?: (update: (tab: AgentCanvasTab) => AgentCanvasTab) => void
   onAttentionHandled?: () => void
@@ -73,6 +79,8 @@ export function CanvasSurface(props: {
       const hostId = thread.worktree.hostId ?? LOCAL_EXECUTION_HOST_ID
       const childRepo = resolveChildWorktreeRepository(repos, thread.worktree)
       const data: AgentCanvasCardData = {
+        style: props.cardStyles?.[paneKey],
+        onStyle: props.onStyle,
         thread,
         hostId,
         canFork: canCreateChildWorktree({
@@ -123,6 +131,8 @@ export function CanvasSurface(props: {
     return nodes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    props.cardStyles,
+    props.onStyle,
     tab.cards,
     tab.items,
     editingId,
@@ -234,6 +244,8 @@ export function CanvasSurface(props: {
       }}
     >
       <ReactFlow<CanvasNode>
+        snapToGrid={props.snapToGrid}
+        snapGrid={[24, 24]}
         nodes={nodes}
         edges={[...edges, ...userEdges.edges]}
         edgeTypes={canvasEdgeTypes}
@@ -297,9 +309,15 @@ export function CanvasSurface(props: {
                 : 'var(--muted)'
           }}
         />
-        <Background variant={BackgroundVariant.Dots} gap={22} size={1.4} color="var(--border)" />
+        <Background
+          variant={BackgroundVariant.Dots}
+          gap={props.snapToGrid ? 24 : 22}
+          size={1.4}
+          color="var(--border)"
+        />
         <Panel position="top-left">
           <CanvasCreateToolbar
+            repoId={props.repoId}
             onAgent={props.onAddAgent}
             onCreate={(type) => {
               const bounds = flow.getViewport()
@@ -339,7 +357,11 @@ export function CanvasSurface(props: {
           />
         </Panel>
         <Panel position="top-right">
-          <ZoomControls onNextAttention={props.onNextAttention} />
+          <ZoomControls
+            snapToGrid={props.snapToGrid}
+            onToggleSnap={props.onToggleSnap}
+            onNextAttention={props.onNextAttention}
+          />
         </Panel>
         {placedCount === 0 ? (
           <Panel

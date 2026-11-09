@@ -1,3 +1,4 @@
+import { canvasCardHues, canvasCardIcons } from '../agent-canvas-card-styles'
 import { z } from 'zod'
 
 export const agentCanvasItemFields = {
@@ -27,3 +28,15 @@ export const agentCanvasItemFields = {
     )
     .optional()
 }
+
+export const agentCanvasCardStylesSchema = z
+  .record(
+    z.string(),
+    z.object({
+      name: z.string().optional(),
+      note: z.string().optional(),
+      color: z.enum(canvasCardHues).optional(),
+      icon: z.enum(canvasCardIcons).optional()
+    })
+  )
+  .optional()

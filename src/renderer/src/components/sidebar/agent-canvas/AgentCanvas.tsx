@@ -1,3 +1,4 @@
+import { normalizeCardStyles } from '../../../../../shared/agent-canvas-card-styles'
 import { CanvasCoordinator } from './CanvasCoordinator'
 import { useCanvasHistory } from './use-canvas-history'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -247,6 +248,16 @@ export default function AgentCanvas(): React.JSX.Element {
       {repoId && tab ? (
         <ReactFlowProvider key={`${repoId}:${tab.id}`}>
           <CanvasSurface
+            repoId={repoId}
+            cardStyles={project.cardStyles}
+            onStyle={(key, style) =>
+              history.commit((p) => ({
+                ...p,
+                cardStyles: normalizeCardStyles({ ...p.cardStyles, [key]: style })
+              }))
+            }
+            snapToGrid={project.snapToGrid}
+            onToggleSnap={() => history.commit((p) => ({ ...p, snapToGrid: !p.snapToGrid }))}
             onRestore={history.restore}
             onEditTab={(update) => editTab(tab.id, update)}
             tab={tab}

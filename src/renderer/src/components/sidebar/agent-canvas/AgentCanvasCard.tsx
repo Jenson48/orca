@@ -1,6 +1,9 @@
+import { CanvasRestartAgent, canRestartCanvasAgent } from './CanvasRestartAgent'
 import { useAppStore } from '@/store'
 import { setAgentCanvasCoordinator } from './coordinator-prompt'
-import React from 'react'
+import React, { useState } from 'react'
+import { CanvasCardEditor, cardIcons } from './CanvasCardEditor'
+import type { CanvasCardStyle } from '../../../../../shared/agent-canvas-card-styles'
 import { Handle, Position, useStore, type Node, type NodeProps } from '@xyflow/react'
 import { Crown, GitBranchPlus, MoreHorizontal, SquareArrowOutUpRight } from 'lucide-react'
 import { AgentTypeIcon } from '@/lib/agent-type-icon'
@@ -34,6 +37,8 @@ import { isIdleAgentCanvasThread } from './use-idle-agent-canvas-threads'
 import { needsAgentCanvasAttention, agentCanvasWorkspaceColor } from './agent-canvas-appearance'
 
 export type AgentCanvasCardData = {
+  style?: CanvasCardStyle
+  onStyle?: (key: string, style: CanvasCardStyle) => void
   thread: AgentPaneThread
   hostId: string
   canFork: boolean
@@ -49,6 +54,10 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
   data,
   selected
 }: NodeProps<AgentCanvasNode>): React.JSX.Element {
+  const [restarting, setRestarting] = useState(false)
+  const [editing, setEditing] = useState<'appearance' | 'note' | null>(null)
+  const style = data.style ?? {}
+  const Icon = style.icon ? cardIcons[style.icon] : null
   const compact = useStore((s) => s.transform[2] < 0.6)
   const t = useTranslate()
   const { thread } = data
@@ -65,7 +74,9 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
         width: AGENT_CANVAS_CARD_WIDTH,
         minHeight: compact ? 44 : AGENT_CANVAS_CARD_HEIGHT,
         borderLeftWidth: 4,
-        borderLeftColor: agentCanvasWorkspaceColor(thread.worktree.id)
+        borderLeftColor: style.color
+          ? `var(--color-${style.color}-500)`
+          : agentCanvasWorkspaceColor(thread.worktree.id)
       }}
       className={cn(
         'group flex flex-col gap-1.5 rounded-lg border bg-card px-3 py-2.5 text-card-foreground shadow-xs transition-[border-color,box-shadow]',
@@ -74,8 +85,17 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
         !thread.currentAgentState && 'opacity-90',
         coordinator && 'border-violet-500 ring-1 ring-violet-500'
       )}
-      aria-label={taskTitle}
+      aria-label={style.name ?? taskTitle}
     >
+      {restarting && <CanvasRestartAgent thread={thread} close={() => setRestarting(false)} />}
+      {editing && (
+        <CanvasCardEditor
+          mode={editing}
+          style={style}
+          save={(value) => data.onStyle?.(thread.paneKey, value)}
+          close={() => setEditing(null)}
+        />
+      )}
       {coordinator && (
         <span className="text-xs text-violet-500">
           {t('agentCanvas.coordinator', 'Coordinator')}
@@ -98,7 +118,7 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
           )}
         </span>
         <div className="min-w-0 flex-1 truncate text-[13px] font-semibold leading-5">
-          {taskTitle}
+          {style.name ?? taskTitle}
         </div>
         {!compact && thread.unread ? (
           <span
@@ -121,6 +141,17 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" onClick={(event) => event.stopPropagation()}>
+              {canRestartCanvasAgent(thread) && (
+                <DropdownMenuItem onSelect={() => setRestarting(true)}>
+                  {t('agentCanvas.restartArgs', 'Restart with arguments…')}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={() => setEditing('appearance')}>
+                {t('agentCanvas.appearance', 'Appearance…')}
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => setEditing('note')}>
+                {t('agentCanvas.note', 'Note…')}
+              </DropdownMenuItem>
               <DropdownMenuItem disabled={!data.canFork} onSelect={() => data.onFork(thread)}>
                 <GitBranchPlus className="size-3.5" />
                 {t('agentCanvas.fork', 'Fork into a child workspace…')}
@@ -169,9 +200,12 @@ export const AgentCanvasCard = React.memo(function AgentCanvasCard({
               {statusLine}
             </div>
           ) : null}
+          {style.note ? (
+            <div className="line-clamp-2 text-xs text-muted-foreground">{style.note}</div>
+          ) : null}
           <div className="mt-auto flex items-center gap-1.5 pt-1">
             <span className="inline-flex items-center gap-1 rounded-md border border-border px-1.5 py-px font-mono text-[10px] uppercase">
-              <AgentTypeIcon agentType={thread.agentType} size={11} />
+              {Icon ? <Icon size={11} /> : <AgentTypeIcon agentType={thread.agentType} size={11} />}
               {formatAgentTypeLabel(thread.agentType)}
             </span>
             <span className="rounded-md border border-border px-1.5 py-px font-mono text-[10px] uppercase text-muted-foreground">

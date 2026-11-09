@@ -1,5 +1,5 @@
 import { useReactFlow, useViewport } from '@xyflow/react'
-import { Bell, Minus, Plus } from 'lucide-react'
+import { Bell, Grid2X2, Minus, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useTranslate } from '@/i18n/use-translate'
 import { getShortcutPlatform } from '@/hooks/useShortcutLabel'
@@ -8,8 +8,12 @@ import { ShortcutKeyCombo } from '@/components/ShortcutKeyCombo'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 
 export function ZoomControls({
+  snapToGrid,
+  onToggleSnap,
   onNextAttention
 }: {
+  snapToGrid?: boolean
+  onToggleSnap?: () => void
   onNextAttention?: () => void
 }): React.JSX.Element {
   const t = useTranslate()
@@ -17,6 +21,20 @@ export function ZoomControls({
   const { zoom } = useViewport()
   return (
     <div className="flex items-center rounded-md border border-border bg-card font-mono text-[11px] shadow-xs">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-pressed={!!snapToGrid}
+            onClick={onToggleSnap}
+            aria-label={t('agentCanvas.snapToGrid', 'Snap to grid')}
+          >
+            <Grid2X2 className="size-3" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{t('agentCanvas.snapToGrid', 'Snap to grid')}</TooltipContent>
+      </Tooltip>
       <Tooltip>
         <TooltipTrigger asChild>
           <Button

@@ -1,6 +1,6 @@
+export { placeAgentCanvasRow } from './agent-canvas-row'
+import { normalizeCardStyles, type CanvasCardStyle } from './agent-canvas-card-styles'
 import { normalizeItems, normalizeEdges, omitEdges } from './agent-canvas-items'
-
-/** Agent canvas layout: per project, user-named tabs holding agent cards at canvas positions. */
 
 export type AgentCanvasPoint = { x: number; y: number }
 export type AgentCanvasViewport = { x: number; y: number; zoom: number }
@@ -26,6 +26,8 @@ export type AgentCanvasTab = {
 }
 
 export type AgentCanvasProjectLayout = {
+  cardStyles?: Record<string, CanvasCardStyle>
+  snapToGrid?: boolean
   coordinatorPaneKey?: string
   tabs: AgentCanvasTab[]
   activeTabId: string
@@ -44,7 +46,6 @@ export const AGENT_CANVAS_CARD_WIDTH = 248
 export const AGENT_CANVAS_CARD_HEIGHT = 132
 const GRID_X = AGENT_CANVAS_CARD_WIDTH + 32
 const GRID_Y = AGENT_CANVAS_CARD_HEIGHT + 40
-const GRID_COLUMNS = 3
 
 export const AGENT_CANVAS_MIN_WIDTH = 360
 export const AGENT_CANVAS_DEFAULT_WIDTH = 640
@@ -115,6 +116,8 @@ function normalizeProject(v: unknown): AgentCanvasProjectLayout {
   return {
     tabs,
     activeTabId,
+    ...(raw.cardStyles !== undefined ? { cardStyles: normalizeCardStyles(raw.cardStyles) } : {}),
+    ...(typeof raw.snapToGrid === 'boolean' ? { snapToGrid: raw.snapToGrid } : {}),
     ...(typeof raw.coordinatorPaneKey === 'string' && raw.coordinatorPaneKey
       ? { coordinatorPaneKey: raw.coordinatorPaneKey }
       : {})
@@ -160,7 +163,7 @@ export function findFreeAgentCanvasSlot(
     }
   }
   for (let i = 0; ; i++) {
-    const p = { x: (i % GRID_COLUMNS) * GRID_X, y: Math.floor(i / GRID_COLUMNS) * GRID_Y }
+    const p = { x: (i % 3) * GRID_X, y: Math.floor(i / 3) * GRID_Y }
     if (!taken.some((t) => overlaps(t, p))) {
       return p
     }
@@ -310,9 +313,16 @@ function omitAgentCanvasCardsWhere<T extends AgentCanvasLayouts | undefined>(
         ...omitEdges(tab, doomed)
       }
     })
+    const removeStyles = Object.keys(project.cardStyles ?? {}).some(doomed)
+    projectChanged ||= removeStyles
     const removeCoordinator = !!project.coordinatorPaneKey && doomed(project.coordinatorPaneKey)
     projectChanged ||= removeCoordinator
     const next = projectChanged ? { ...project, tabs } : project
+    if (removeStyles) {
+      next.cardStyles = Object.fromEntries(
+        Object.entries(project.cardStyles ?? {}).filter(([key]) => !doomed(key))
+      )
+    }
     if (removeCoordinator) {
       delete next.coordinatorPaneKey
     }

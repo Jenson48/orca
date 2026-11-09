@@ -1,4 +1,4 @@
-import { agentCanvasItemFields } from './agent-canvas-item-schema'
+import { agentCanvasItemFields, agentCanvasCardStylesSchema } from './agent-canvas-item-schema'
 import { GitHistoryRefName } from './git-params'
 import { z } from 'zod'
 import { isFeatureTipSeenId } from '../feature-tips'
@@ -164,6 +164,8 @@ export const UiUpdateFields = z
           z.string(),
           z.object({
             activeTabId: z.string(),
+            cardStyles: agentCanvasCardStylesSchema,
+            snapToGrid: z.boolean().optional(),
             coordinatorPaneKey: z.string().optional(),
             tabs: z.array(
               z.object({
